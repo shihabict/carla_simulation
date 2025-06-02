@@ -7,3 +7,4 @@ test.cpp
 test.py
 *.png
 *.pkl
+*.csv
