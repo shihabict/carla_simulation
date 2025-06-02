@@ -1,0 +1,9 @@
+__pycache__
+.ipynb_checkpoints/
+.idea
+carlasimenv/
+*.pdf
+test.cpp
+test.py
+*.png
+*.pkl
