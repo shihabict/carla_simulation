@@ -12,13 +12,13 @@ from tutorials.idm_controller import IDMController
 # ==== CARLA Client Setup ====
 client = carla.Client('localhost', 2000)
 client.set_timeout(10.0)
-world = client.load_world('Town04')
+world = client.load_world('Town02')
 bp_lib = world.get_blueprint_library()
 tm = client.get_trafficmanager()
 
 # ==== Weather Setup ====
 world.set_weather(carla.WeatherParameters.CloudyNoon)
-w
+
 # ==== Spawn Points ====
 spawn_points = world.get_map().get_spawn_points()
 
@@ -113,4 +113,8 @@ while True:
     camera_tf = carla.Transform(camera_location, follower_tf.rotation)
     spectator.set_transform(camera_tf)
 
-    time.sleep(0.05)  # ~20 Hzw
+    time.sleep(0.05)  # ~20 Hz
+
+
+
+print(0)
