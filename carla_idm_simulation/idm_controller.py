@@ -14,3 +14,14 @@ class IDMController:
             return accel, 0.0  # throttle, brake
         else:
             return 0.0, -accel  # throttle, brake
+    # In idm_controller.py
+    # def step(self, dx, dv, curvature=0):
+    #     # Add curvature term to reduce speed in turns
+    #     turn_factor = 1.0 / (1.0 + 5.0 * abs(curvature))
+    #     effective_desired_speed = self.desired_speed * turn_factor
+    #
+    #     accel = self.max_accel * (1 - (dv / effective_desired_speed) ** 4 -
+    #                               (self.desired_gap / (dx + 1e-5)) ** 2)
+    #     accel = max(min(accel, 1.0), -1.0)
+    #
+    #     return (accel, 0.0) if accel >= 0 else (0.0, -accel)
