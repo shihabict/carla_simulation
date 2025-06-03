@@ -6,19 +6,19 @@ import math
 import os
 import pygame
 
-from tutorials.follower_controller import FollowerController
+from carla_idm_simulation.follower_controller import FollowerController
 from tutorials.idm_controller import IDMController
 
 # ==== CARLA Client Setup ====
 client = carla.Client('localhost', 2000)
 client.set_timeout(10.0)
-world = client.load_world('Town04')
+world = client.load_world('Town01')
 bp_lib = world.get_blueprint_library()
 tm = client.get_trafficmanager()
 
 # ==== Weather Setup ====
 world.set_weather(carla.WeatherParameters.CloudyNoon)
-w
+
 # ==== Spawn Points ====
 spawn_points = world.get_map().get_spawn_points()
 
@@ -69,42 +69,24 @@ spectator.set_transform(spectator_transform)
 # Initialize IDM controller (custom logic you define)
 idm = IDMController()
 controller = FollowerController(world, follower, leader, idm)
-# while True:
-#     # Get states
-#     leader_transform = leader.get_transform()
-#     follower_transform = follower.get_transform()
-#     leader_velocity = leader.get_velocity()
-#     follower_velocity = follower.get_velocity()
-#
-#     # Compute spacing and speed diwfference
-#     dx = leader_transform.location.distance(follower_transform.location)
-#     dv = math.sqrt(leader_velocity.x**2 + leader_velocity.y**2 + leader_velocity.z**2) - \
-#          math.sqrt(follower_velocity.x**2 + follower_velocity.y**2 + follower_velocity.z**2)
-#
-#     # IDM step: compute throttle/brake based on dx and dv
-#     throttle, brake = idm.step(dx, dv)
-#
-#     # Control follower
-#     control = carla.VehicleControl(throttle=throttle, brake=brake)
-#     follower.apply_control(control)
-#
-#     time.sleep(0.05)  # ~20 Hz update
+
 
 while True:
+    controller.update()
     # Get transforms and velocities
-    leader_tf = leader.get_transform()
+    # leader_tf = leader.get_transform()
     follower_tf = follower.get_transform()
-    leader_vel = leader.get_velocity()
-    follower_vel = follower.get_velocity()
-
-    # Compute gap and relative speed
-    dx = leader_tf.location.distance(follower_tf.location)
-    dv = math.sqrt(leader_vel.x**2 + leader_vel.y**2 + leader_vel.z**2) - \
-         math.sqrt(follower_vel.x**2 + follower_vel.y**2 + follower_vel.z**2)
-
-    # IDM control step
-    throttle, brake = idm.step(dx, dv)
-    follower.apply_control(carla.VehicleControl(throttle=throttle, brake=brake))
+    # leader_vel = leader.get_velocity()
+    # follower_vel = follower.get_velocity()
+    #
+    # # Compute gap and relative speed
+    # dx = leader_tf.location.distance(follower_tf.location)
+    # dv = math.sqrt(leader_vel.x**2 + leader_vel.y**2 + leader_vel.z**2) - \
+    #      math.sqrt(follower_vel.x**2 + follower_vel.y**2 + follower_vel.z**2)
+    #
+    # # IDM control step
+    # throttle, brake = idm.step(dx, dv)
+    # follower.apply_control(carla.VehicleControl(throttle=throttle, brake=brake))
 
     # === Update camera to follow follower ===
     spectator = world.get_spectator()
