@@ -6,8 +6,9 @@ import math
 import os
 import pygame
 
-from carla_idm_simulation.follower_controller import FollowerController
-from tutorials.idm_controller import IDMController
+from camera_setup import SmoothCamera
+from idm_controller import IDMController
+from follower_controller import FollowerController
 
 # ==== CARLA Client Setup ====
 client = carla.Client('localhost', 2000)
@@ -72,7 +73,7 @@ controller = FollowerController(world, follower, leader, idm)
 
 
 while True:
-    controller.update()
+    # controller.update()
     # Get transforms and velocities
     # leader_tf = leader.get_transform()
     follower_tf = follower.get_transform()
@@ -89,10 +90,19 @@ while True:
     # follower.apply_control(carla.VehicleControl(throttle=throttle, brake=brake))
 
     # === Update camera to follow follower ===
-    spectator = world.get_spectator()
-    back_vector = follower_tf.get_forward_vector() * -8
-    camera_location = follower_tf.location + back_vector + carla.Location(z=3)
-    camera_tf = carla.Transform(camera_location, follower_tf.rotation)
-    spectator.set_transform(camera_tf)
+
+    # spectator = world.get_spectator()
+    # back_vector = follower_tf.get_forward_vector() * -8
+    # camera_location = follower_tf.location + back_vector + carla.Location(z=3)
+    # camera_tf = carla.Transform(camera_location, follower_tf.rotation)
+    # spectator.set_transform(camera_tf)
+
+    # After spawning the follower:
+    smooth_camera = SmoothCamera(world, follower, smoothing_factor=0.2)  # Lower = smoother
+
+    while True:
+        controller.update()
+        smooth_camera.update()  # Replace your manual camera updates
+        time.sleep(0.05)
 
     time.sleep(0.05)  # ~20 Hzw
