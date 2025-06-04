@@ -12,6 +12,7 @@ This project implements an **Intelligent Driver Model (IDM)** car-following simu
 ## Prerequisites
 - CARLA 0.9.15+ ([Download](https://github.com/carla-simulator/carla/blob/master/Docs/download.md)
 - Python 3.7 or 3.9
+- Follow this document to install CARLA ([CARLA Installation Document](https://drive.google.com/file/d/10hNyc_oCqnkp902S2kJs19bu8Eurxxes/view?usp=sharing)
 
 ## File Structure
 ```bash 
