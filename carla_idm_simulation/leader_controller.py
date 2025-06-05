@@ -13,7 +13,7 @@ class LeaderController:
         return math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2)
 
     def get_target_speed(self, elapsed_time):
-        cycle_time = elapsed_time % 15  # Repeat every 15 seconds
+        cycle_time = elapsed_time % 25  # Repeat every 15 seconds
 
         if cycle_time < 10:
             return 10.0  # High speed for first 10 seconds

@@ -5,6 +5,8 @@ import csv
 import math
 import os
 import pygame
+
+from live_plotter import LivePlotter
 from data_logger import DataLogger
 from camera_setup import SmoothCamera
 from idm_controller import IDMController
@@ -94,16 +96,7 @@ spectator.set_transform(spectator_transform)
 idm = IDMController()
 follower_controller = FollowerController(world, follower, leader, idm)
 logger = DataLogger()
-
-# while True:
-#     controller.update()
-#     follower_tf = follower.get_transform()
-#
-#     spectator = world.get_spectator()
-#     back_vecactor = follower_tf.get_forward_vector() * -8
-#     camera_location = follower_tf.location + back_vector + carla.Location(z=3)
-#     camera_tf = carla.Transform(camera_location, follower_tf.rotation)
-#     spectator.set_transform(camera_tf)
+plotter = LivePlotter()
 
 try:
     while True:
@@ -119,6 +112,14 @@ try:
 
         # Log data
         logger.log_data(leader, follower, dx, dv)
+
+        # Calculate speeds
+        leader_speed = math.sqrt(leader_vel.x ** 2 + leader_vel.y ** 2 + leader_vel.z ** 2)
+        follower_speed = math.sqrt(follower_vel.x ** 2 + follower_vel.y ** 2 + follower_vel.z ** 2)
+        elapsed_time = time.time() - logger.start_time
+
+        # Plot update
+        plotter.update(elapsed_time, leader_speed, follower_speed)
 
         # Camera update (existing code)
         spectator = world.get_spectator()
