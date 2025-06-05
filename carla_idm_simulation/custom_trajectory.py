@@ -14,6 +14,7 @@ from follower_controller import FollowerController
 client = carla.Client('localhost', 2000)
 client.set_timeout(10.0)
 world = client.load_world('Town04')
+map = world.get_map()
 bp_lib = world.get_blueprint_library()
 tm = client.get_trafficmanager()
 
@@ -21,7 +22,7 @@ tm = client.get_trafficmanager()
 world.set_weather(carla.WeatherParameters.CloudyNoon)
 
 # ==== Spawn Points ====
-spawn_points = world.get_map().get_spawn_points()
+spawn_points = map.get_spawn_points()
 
 leader_index = 8
 follower_index = leader_index + 2  # usually right behind in same lane
@@ -56,8 +57,20 @@ follower.apply_physics_control(physics_control)
 
 
 # ==== Set Autopilot for Leader ====
-leader.set_autopilot(True, tm.get_port())
+# leader.set_autopilot(True, tm.get_port())
 # follower.set_autoplot(False)
+
+from leader_controller import LeaderController
+
+# Generate custom path for leader
+leader_start_wp = map.get_waypoint(leader.get_location())
+leader_path = [leader_start_wp]
+for _ in range(500):  # 500 x 2.0m = 1000 meters path
+    leader_path.append(leader_path[-1].next(2.0)[0])
+
+# Create leader controller
+leader_controller = LeaderController(leader, leader_path)
+
 
 # Setup spectator view behind follower
 spectator = world.get_spectator()
@@ -79,7 +92,7 @@ spectator.set_transform(spectator_transform)
 
 # Initialize IDM controller (custom logic you define)
 idm = IDMController()
-controller = FollowerController(world, follower, leader, idm)
+follower_controller = FollowerController(world, follower, leader, idm)
 logger = DataLogger()
 
 # while True:
@@ -94,7 +107,8 @@ logger = DataLogger()
 
 try:
     while True:
-        controller.update()
+        leader_controller.run_step()
+        follower_controller.update()
         follower_tf = follower.get_transform()
 
         # Calculate logging parameters
