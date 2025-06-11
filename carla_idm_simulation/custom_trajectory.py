@@ -41,6 +41,7 @@ offset = carla.Location(x=-10)  # behind by 10 meters in local coordinates
 follower_location = leader_spawn.transform(offset)
 follower_transform = carla.Transform(follower_location, leader_spawn.rotation)
 
+
 # ==== Spawn Vehicles ====
 leader = world.try_spawn_actor(leader_bp, leader_spawn)
 follower = world.try_spawn_actor(follower_bp, follower_transform)
