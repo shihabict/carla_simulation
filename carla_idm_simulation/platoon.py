@@ -87,7 +87,7 @@ vehicle_labels = ['Leader'] + [f'Follower {i+1}' for i in range(len(followers))]
 
 
 # ==== Init Plotter and Logger ====
-logger = DataLogger()
+logger = DataLogger(num_followers=len(followers))
 plotter = LivePlotter(vehicle_labels)
 
 try:
@@ -113,7 +113,8 @@ try:
         dx = leader_tf.location.distance(last_follower_tf.location)
         dv = math.sqrt(leader_vel.x**2 + leader_vel.y**2) - math.sqrt(last_follower_vel.x**2 + last_follower_vel.y**2)
 
-        logger.log_data(leader, last_follower, dx, dv)
+        # logger.log_data(leader, last_follower, dx, dv)
+        logger.log_data(leader, followers)
 
         # Add follower speeds to dictionary
         for i, follower in enumerate(followers):
