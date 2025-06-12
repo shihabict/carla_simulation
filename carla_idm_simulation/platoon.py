@@ -31,16 +31,8 @@ follower_bp = bp_lib.find('vehicle.audi.tt')
 # ==== Spawn Leader ====
 leader = world.try_spawn_actor(leader_bp, leader_spawn)
 
-# ==== Generate Custom Path for Leader ====
-leader_start_wp = map.get_waypoint(leader.get_location())
-leader_path = [leader_start_wp]
-for _ in range(500):
-    leader_path.append(leader_path[-1].next(2.0)[0])
-
-leader_controller = LeaderController(leader, leader_path)
-
 # ==== Spawn N Followers ====
-num_followers = 1  # Change this value to spawn more followers
+num_followers = 2  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
@@ -71,6 +63,14 @@ for i in range(num_followers):
     follower_controllers.append(controller)
 
     previous_vehicle = follower
+
+# ==== Generate Custom Path for Leader ====
+leader_start_wp = map.get_waypoint(leader.get_location())
+leader_path = [leader_start_wp]
+for _ in range(500):
+    leader_path.append(leader_path[-1].next(2.0)[0])
+
+leader_controller = LeaderController(leader, leader_path)
 
 # ==== Camera Setup behind last follower ====
 spectator = world.get_spectator()
