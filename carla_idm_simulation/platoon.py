@@ -21,7 +21,7 @@ world.set_weather(carla.WeatherParameters.CloudyNoon)
 
 # ==== Spawn Points ====
 spawn_points = map.get_spawn_points()
-leader_index = 8
+leader_index = 5
 leader_spawn = spawn_points[leader_index]
 
 # ==== Vehicle Blueprints ====
@@ -32,7 +32,7 @@ follower_bp = bp_lib.find('vehicle.audi.tt')
 leader = world.try_spawn_actor(leader_bp, leader_spawn)
 
 # ==== Spawn N Followers ====
-num_followers = 2  # Change this value to spawn more followers
+num_followers = 5  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
@@ -47,14 +47,14 @@ for i in range(num_followers):
         print(f"Follower {i+1} failed to spawn.")
         continue
 
-    # # Apply physics damping
-    # physics_control = follower.get_physics_control()
-    # physics_control.linear_damping = 0.3
-    # physics_control.angular_damping = 0.7
-    # for wheel in physics_control.wheels:
-    #     wheel.damping_rate = 2.0
-    #     wheel.max_steer_angle = 70.0
-    # follower.apply_physics_control(physics_control)
+    # Apply physics damping
+    physics_control = follower.get_physics_control()
+    physics_control.linear_damping = 1
+    physics_control.angular_damping = 1.5
+    for wheel in physics_control.wheels:
+        wheel.damping_rate = 3.0
+        wheel.max_steer_angle = 60.0
+    follower.apply_physics_control(physics_control)
 
     idm = IDMController()
     controller = FollowerController(world, follower, previous_vehicle, idm)
@@ -72,6 +72,7 @@ for _ in range(500):
 
 leader_controller = LeaderController(leader, leader_path)
 
+
 # ==== Camera Setup behind last follower ====
 spectator = world.get_spectator()
 last_follower_tf = followers[-1].get_transform()
@@ -80,9 +81,14 @@ camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
 camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
 spectator.set_transform(camera_tf)
 
+
+# ==== Compute the vehicles label ====
+vehicle_labels = ['Leader'] + [f'Follower {i+1}' for i in range(len(followers))]
+
+
 # ==== Init Plotter and Logger ====
 logger = DataLogger()
-plotter = LivePlotter()
+plotter = LivePlotter(vehicle_labels)
 
 try:
     while True:
@@ -91,23 +97,35 @@ try:
         for controller in follower_controllers:
             controller.update()
 
-        # Log and plot only the last follower for now
-        last_follower = followers[-1]
-        dx = leader.get_transform().location.distance(last_follower.get_transform().location)
+        # === Collect and log leader/follower data ===
+        leader_tf = leader.get_transform()
         leader_vel = leader.get_velocity()
-        follower_vel = last_follower.get_velocity()
-        dv = math.sqrt(leader_vel.x ** 2 + leader_vel.y ** 2) - math.sqrt(follower_vel.x ** 2 + follower_vel.y ** 2)
+        leader_speed = math.sqrt(leader_vel.x**2 + leader_vel.y**2 + leader_vel.z**2)
+
+        # Initialize speed dictionary with leader
+        speeds = {'Leader': leader_speed}
+
+        # Optional: log and plot the last follower only
+        last_follower = followers[-1]
+        last_follower_tf = last_follower.get_transform()
+        last_follower_vel = last_follower.get_velocity()
+
+        dx = leader_tf.location.distance(last_follower_tf.location)
+        dv = math.sqrt(leader_vel.x**2 + leader_vel.y**2) - math.sqrt(last_follower_vel.x**2 + last_follower_vel.y**2)
 
         logger.log_data(leader, last_follower, dx, dv)
 
-        leader_speed = math.sqrt(leader_vel.x ** 2 + leader_vel.y ** 2 + leader_vel.z ** 2)
-        follower_speed = math.sqrt(follower_vel.x ** 2 + follower_vel.y ** 2 + follower_vel.z ** 2)
+        # Add follower speeds to dictionary
+        for i, follower in enumerate(followers):
+            v = follower.get_velocity()
+            follower_speed = math.sqrt(v.x**2 + v.y**2 + v.z**2)
+            speeds[f'Follower {i+1}'] = follower_speed
+
+        # Update plot
         elapsed_time = time.time() - logger.start_time
+        plotter.update(elapsed_time, speeds)
 
-        plotter.update(elapsed_time, leader_speed, follower_speed)
-
-        # Update camera to follow last follower
-        last_follower_tf = last_follower.get_transform()
+        # === Camera: Follow last follower ===
         back_vector = last_follower_tf.get_forward_vector() * -8
         camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
         camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
