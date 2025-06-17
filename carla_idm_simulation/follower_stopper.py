@@ -23,9 +23,10 @@ class FollowerStopperController:
         Compute dynamic region boundaries based on velocity difference.
         """
         delta_v_minus = min(delta_v, 0)  # only consider catching up
-        x1 = self.x0_1 + 0.5 / self.d1 * delta_v_minus ** 2
-        x2 = self.x0_2 + 0.5 / self.d2 * delta_v_minus ** 2
-        x3 = self.x0_3 + 0.5 / self.d3 * delta_v_minus ** 2
+        x1 = self.x0_1 + (1/2*self.d1) * delta_v_minus ** 2
+        # x1 = self.x0_1 + 0.5 / self.d1 * delta_v_minus ** 2
+        x2 = self.x0_2 + (1/2*self.d2) * delta_v_minus ** 2
+        x3 = self.x0_3 + (1/2*self.d3) * delta_v_minus ** 2
         return x1, x2, x3
 
     def compute_command_velocity(self, v_AV, v_lead, delta_x):
@@ -44,17 +45,23 @@ class FollowerStopperController:
         x1, x2, x3 = self.compute_region_boundaries(delta_v)
 
         # Adjust lead velocity v = min(max(v_lead, 0), U)
+        # print(f"Leader velocity: {v_lead}")
+        # print(f"Follower Velocity: {v_AV}")
         v = min(max(v_lead, 0), self.U)
 
         # Compute commanded velocity based on region
         if delta_x <= x1:
             v_cmd = 0.0
+            print(f"Zero Velocity")
         elif delta_x <= x2:
             v_cmd = v * (delta_x - x1) / (x2 - x1)
+            print(f"Adaption Region 1: {v_cmd}")
         elif delta_x <= x3:
             v_cmd = v + (self.U - v) * (delta_x - x2) / (x3 - x2)
+            print(f"Adaption Region 2: {v_cmd}")
         else:
             v_cmd = self.U
+            print(f"Safe Region : {v_cmd}")
 
         return v_cmd
 

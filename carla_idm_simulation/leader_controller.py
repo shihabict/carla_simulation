@@ -40,7 +40,7 @@ class LeaderController:
         # print(f"Distance is {vehicle_loc.distance(target_loc)}")
 
         if vehicle_loc.distance(target_loc) < 2.0:
-            print(f"Distance is {vehicle_loc.distance(target_loc)}")
+            # print(f"Distance is {vehicle_loc.distance(target_loc)}")
             self.index += 1
             return
 
@@ -49,7 +49,7 @@ class LeaderController:
         dot = vehicle_vec.x * v_target.x + vehicle_vec.y * v_target.y
         cross = vehicle_vec.x * v_target.y - vehicle_vec.y * v_target.x
         angle = math.atan2(cross, dot)
-        print(f"Steering Angle: {angle}")
+        # print(f"Steering Angle: {angle}")
         steer = max(min(angle * 2.0, 1.0), -1.0)
 
         # --- Speed Control ---

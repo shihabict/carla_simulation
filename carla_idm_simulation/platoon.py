@@ -2,10 +2,11 @@ import carla
 import time
 import math
 
+from idm_controller import IDMController
 from follower_stopper import FollowerStopperController
 from live_plotter import LivePlotter
 from data_logger import DataLogger
-from idm_controller import IDMController
+# from idm_controller import IDMController
 from follower_controller_v2 import FollowerController
 from leader_controller import LeaderController
 
@@ -41,7 +42,7 @@ follower_controllers = []
 
 previous_vehicle = leader
 for i in range(num_followers):
-    offset = carla.Location(x=-(i + 1) * 10)
+    offset = carla.Location(x=-(i + 1) * 5)
     spawn_location = leader_spawn.transform(offset)
     spawn_transform = carla.Transform(spawn_location, leader_spawn.rotation)
 
@@ -62,7 +63,7 @@ for i in range(num_followers):
     # idm = IDMController()
     # controller = FollowerController(world, follower, previous_vehicle, idm)
 
-    controller = FollowerController(world, follower, leader, FollowerStopperController(U=7.5))
+    controller = FollowerController(world, follower, leader, FollowerStopperController(U=15))
 
     followers.append(follower)
     follower_controllers.append(controller)
@@ -132,7 +133,7 @@ try:
         plotter.update(elapsed_time, speeds)
 
         # === Camera: Follow last follower ===
-        back_vector = last_follower_tf.get_forward_vector() * -8
+        back_vector = last_follower_tf.get_forward_vector() * -20
         camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
         camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
         spectator.set_transform(camera_tf)
