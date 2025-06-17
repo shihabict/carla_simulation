@@ -2,11 +2,14 @@ import carla
 import time
 import math
 
+from follower_stopper import FollowerStopperController
 from live_plotter import LivePlotter
 from data_logger import DataLogger
 from idm_controller import IDMController
-from follower_controller import FollowerController
+from follower_controller_v2 import FollowerController
 from leader_controller import LeaderController
+
+# from research.follower_stopper import FollowerStopperController
 
 # ==== CARLA Client Setup ====
 client = carla.Client('localhost', 2000)
@@ -32,7 +35,7 @@ follower_bp = bp_lib.find('vehicle.audi.tt')
 leader = world.try_spawn_actor(leader_bp, leader_spawn)
 
 # ==== Spawn N Followers ====
-num_followers = 5  # Change this value to spawn more followers
+num_followers = 1  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
@@ -56,8 +59,10 @@ for i in range(num_followers):
         wheel.max_steer_angle = 60.0
     follower.apply_physics_control(physics_control)
 
-    idm = IDMController()
-    controller = FollowerController(world, follower, previous_vehicle, idm)
+    # idm = IDMController()
+    # controller = FollowerController(world, follower, previous_vehicle, idm)
+
+    controller = FollowerController(world, follower, leader, FollowerStopperController(U=7.5))
 
     followers.append(follower)
     follower_controllers.append(controller)
