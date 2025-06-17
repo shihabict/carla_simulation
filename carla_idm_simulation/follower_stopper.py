@@ -23,6 +23,7 @@ class FollowerStopperController:
         Compute dynamic region boundaries based on velocity difference.
         """
         delta_v_minus = min(delta_v, 0)  # only consider catching up
+        print(f"Delta V minus ______ {delta_v_minus}")
         x1 = self.x0_1 + (1/2*self.d1) * delta_v_minus ** 2
         # x1 = self.x0_1 + 0.5 / self.d1 * delta_v_minus ** 2
         x2 = self.x0_2 + (1/2*self.d2) * delta_v_minus ** 2
@@ -53,15 +54,17 @@ class FollowerStopperController:
         if delta_x <= x1:
             v_cmd = 0.0
             print(f"Zero Velocity")
-        elif delta_x <= x2:
+        elif delta_x>x1 and delta_x <= x2:
             v_cmd = v * (delta_x - x1) / (x2 - x1)
             print(f"Adaption Region 1: {v_cmd}")
-        elif delta_x <= x3:
+        elif delta_x>x2 and delta_x <= x3:
             v_cmd = v + (self.U - v) * (delta_x - x2) / (x3 - x2)
             print(f"Adaption Region 2: {v_cmd}")
-        else:
+        elif delta_x> x3:
             v_cmd = self.U
             print(f"Safe Region : {v_cmd}")
+            print(f"x 3 --- {x3}")
+            print(f"Delta X ******* {delta_x}")
 
         return v_cmd
 

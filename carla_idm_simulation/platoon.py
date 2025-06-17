@@ -63,7 +63,12 @@ for i in range(num_followers):
     # idm = IDMController()
     # controller = FollowerController(world, follower, previous_vehicle, idm)
 
-    controller = FollowerController(world, follower, leader, FollowerStopperController(U=15))
+    # controller = FollowerController(world, follower, leader, FollowerStopperController(U=15))
+
+    idm = IDMController()
+    fs = FollowerStopperController(U=7.5)
+
+    controller = FollowerController(world, follower, leader, idm, fs, switch_time=20)
 
     followers.append(follower)
     follower_controllers.append(controller)
