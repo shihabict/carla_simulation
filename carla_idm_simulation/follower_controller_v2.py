@@ -61,7 +61,7 @@ class FollowerController:
         delta_x = leader_tf.location.distance(follower_tf.location)
 
         # === Choose controller based on time ===
-        if elapsed_time < self.switch_time:
+        if int(elapsed_time // self.switch_time) % 2 == 0:
             throttle, brake = self.idm.step(delta_x, v_lead - v_follower)
         else:
             v_cmd = self.fs.compute_command_velocity(v_follower, v_lead, delta_x)

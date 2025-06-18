@@ -36,7 +36,7 @@ follower_bp = bp_lib.find('vehicle.audi.tt')
 leader = world.try_spawn_actor(leader_bp, leader_spawn)
 
 # ==== Spawn N Followers ====
-num_followers = 1  # Change this value to spawn more followers
+num_followers = 3  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
@@ -66,7 +66,7 @@ for i in range(num_followers):
     # controller = FollowerController(world, follower, leader, FollowerStopperController(U=15))
 
     idm = IDMController()
-    fs = FollowerStopperController(U=7.5)
+    fs = FollowerStopperController(U=15)
 
     controller = FollowerController(world, follower, leader, idm, fs, switch_time=20)
 
@@ -148,3 +148,6 @@ except KeyboardInterrupt:
 finally:
     logger.stop_logging()
     print("Data saved to logs/car_following_data.csv")
+    plotter.save_plot('final_speed_plot.png')
+
+

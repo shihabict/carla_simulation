@@ -1,5 +1,3 @@
-
-
 import matplotlib.pyplot as plt
 
 class LivePlotter:
@@ -28,21 +26,6 @@ class LivePlotter:
 
         self.fig.show()
 
-    # def update(self, t, leader_v, follower_v):
-    #     self.timestamps.append(t)
-    #     self.leader_speeds.append(leader_v)
-    #     self.follower_speeds.append(follower_v)
-    #
-    #     self.leader_line.set_data(self.timestamps, self.leader_speeds)
-    #     self.follower_line.set_data(self.timestamps, self.follower_speeds)
-    #
-    #     self.ax.relim()
-    #     self.ax.autoscale_view()
-    #
-    #     self.fig.canvas.draw()
-    #     self.fig.canvas.flush_events()
-    #     plt.pause(0.001)  # ⬅️ This is critical for live update
-
     def update(self, t, vehicle_speeds_dict):
         self.timestamps.append(t)
         for label, speed in vehicle_speeds_dict.items():
@@ -54,6 +37,18 @@ class LivePlotter:
         self.ax.autoscale_view()
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
-        import matplotlib.pyplot as plt
+
         plt.pause(0.001)
+
+    def save_plot(self, filename='speed_plot.png'):
+        """
+        Save the current plot to a file.
+        Parameters:
+        - filename (str): Name of the output file (e.g., 'plot.png', 'plot.pdf')
+        """
+        self.ax.legend()  # Ensure legend is drawn in saved version
+        self.fig.savefig(filename, bbox_inches='tight')
+        print(f"Plot saved to '{filename}'")
+
+
 
