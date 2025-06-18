@@ -91,6 +91,8 @@ back_vector = last_follower_tf.get_forward_vector() * -16
 camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
 camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
 spectator.set_transform(camera_tf)
+if 'smoothed_camera_tf' not in locals():
+    smoothed_camera_tf = last_follower_tf
 
 
 # ==== Compute the vehicles label ====
@@ -138,10 +140,76 @@ try:
         plotter.update(elapsed_time, speeds)
 
         # === Camera: Follow last follower ===
-        back_vector = last_follower_tf.get_forward_vector() * -20
-        camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
-        camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
-        spectator.set_transform(camera_tf)
+        # back_vector = last_follower_tf.get_forward_vector() * -8
+        # camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
+        # camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
+        # spectator.set_transform(camera_tf)
+        # raw_tf = followers[-1].get_transform()
+        # back_vector = raw_tf.get_forward_vector() * -8
+        # camera_location = raw_tf.location + back_vector + carla.Location(z=3)
+        # target_tf = carla.Transform(camera_location, raw_tf.rotation)
+        #
+        # # Smooth with exponential moving average
+        # alpha = 0.1  # smoothing factor
+        #
+        # smoothed_loc = smoothed_camera_tf.location
+        # smoothed_rot = smoothed_camera_tf.rotation
+        #
+        # # Interpolate manually
+        # smoothed_loc = carla.Location(
+        #     x=smoothed_loc.x + alpha * (target_tf.location.x - smoothed_loc.x),
+        #     y=smoothed_loc.y + alpha * (target_tf.location.y - smoothed_loc.y),
+        #     z=smoothed_loc.z + alpha * (target_tf.location.z - smoothed_loc.z)
+        # )
+        #
+        # smoothed_rot = carla.Rotation(
+        #     pitch=smoothed_rot.pitch + alpha * (target_tf.rotation.pitch - smoothed_rot.pitch),
+        #     yaw=smoothed_rot.yaw + alpha * (target_tf.rotation.yaw - smoothed_rot.yaw),
+        #     roll=smoothed_rot.roll + alpha * (target_tf.rotation.roll - smoothed_rot.roll)
+        # )
+        #
+        # smoothed_camera_tf = carla.Transform(smoothed_loc, smoothed_rot)
+        # spectator.set_transform(smoothed_camera_tf)
+
+        # Get the transform of the follower vehicle
+        vehicle_tf = followers[-1].get_transform()
+
+        # Driver seat relative offset (adjust if needed)
+        # Define driver offset from vehicle origin (forward and upward)
+        driver_offset_loc = carla.Location(x=1.7, z=2)
+
+        # Transform to world coordinates
+        driver_world_loc = vehicle_tf.transform(driver_offset_loc)
+
+        # Use the vehicle's rotation directly (driver looks forward)
+        driver_view_tf = carla.Transform(driver_world_loc, vehicle_tf.rotation)
+
+        # Apply to spectator
+        spectator = world.get_spectator()
+        spectator.set_transform(driver_view_tf)
+
+        # === Debug: Draw labels above vehicles ===
+        leader_loc = leader.get_transform().location + carla.Location(z=2)
+        world.debug.draw_string(
+            leader_loc,
+            "Leader",
+            draw_shadow=False,
+            color=carla.Color(0, 255, 0),  # Bright green
+            life_time=0.1
+        )
+
+        for i, follower in enumerate(followers):
+            label = f"Follower {i + 1}"
+            loc = follower.get_transform().location + carla.Location(z=2)
+            world.debug.draw_string(
+                loc,
+                label,
+                draw_shadow=True,
+                color=carla.Color(255, 255, 0),  # Bright yellow
+                life_time=0.1
+            )
+
+
 
 except KeyboardInterrupt:
     print("Simulation stopped by user")
