@@ -66,6 +66,10 @@ class FollowerStopperController:
             print(f"x 3 --- {x3}")
             print(f"Delta X ******* {delta_x}")
 
+        # if v_cmd<self.U:
+        #     return v_cmd
+        # else:
+        #     return v_AV
         return v_cmd
 
 if __name__ == "__main__":

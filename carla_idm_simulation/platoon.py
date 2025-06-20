@@ -36,7 +36,7 @@ follower_bp = bp_lib.find('vehicle.audi.tt')
 leader = world.try_spawn_actor(leader_bp, leader_spawn)
 
 # ==== Spawn N Followers ====
-num_followers = 3  # Change this value to spawn more followers
+num_followers = 1  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
@@ -81,7 +81,8 @@ leader_path = [leader_start_wp]
 for _ in range(500):
     leader_path.append(leader_path[-1].next(2.0)[0])
 
-leader_controller = LeaderController(leader, leader_path)
+leader.set_autopilot(True, tm.get_port())
+# leader_controller = LeaderController(leader, leader_path)
 
 
 # ==== Camera Setup behind last follower ====
@@ -103,7 +104,7 @@ plotter = LivePlotter(vehicle_labels)
 
 try:
     while True:
-        leader_controller.run_step()
+        # leader_controller.run_step()
 
         for controller in follower_controllers:
             controller.update()

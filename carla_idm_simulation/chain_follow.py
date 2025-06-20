@@ -15,7 +15,7 @@ from leader_controller import LeaderController
 # ==== CARLA Client Setup ====
 client = carla.Client('localhost', 2000)
 client.set_timeout(10.0)
-world = client.load_world('Town04')
+world = client.load_world('Town03')
 map = world.get_map()
 bp_lib = world.get_blueprint_library()
 tm = client.get_trafficmanager()
@@ -36,13 +36,13 @@ follower_bp = bp_lib.find('vehicle.audi.tt')
 leader = world.try_spawn_actor(leader_bp, leader_spawn)
 
 # ==== Spawn N Followers ====
-num_followers = 3  # Change this value to spawn more followers
+num_followers = 2  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
 previous_vehicle = leader
 for i in range(num_followers):
-    offset = carla.Location(x=-(i + 1) * 5)
+    offset = carla.Location(x=-(i + 1) * 8)
     spawn_location = leader_spawn.transform(offset)
     spawn_transform = carla.Transform(spawn_location, leader_spawn.rotation)
 
@@ -68,7 +68,7 @@ for i in range(num_followers):
     idm = IDMController()
     fs = FollowerStopperController(U=7.5)
 
-    controller = FollowerController(world, follower, previous_vehicle, idm, fs, switch_time=50)
+    controller = FollowerController(world, follower, previous_vehicle, idm, fs, switch_time=20)
 
     followers.append(follower)
     follower_controllers.append(controller)
@@ -81,8 +81,9 @@ leader_path = [leader_start_wp]
 for _ in range(200):
     leader_path.append(leader_path[-1].next(2.0)[0])
 
-leader_controller = LeaderController(leader, leader_path)
+# leader_controller = LeaderController(leader, leader_path)
 
+leader.set_autopilot(True, tm.get_port())
 
 # ==== Camera Setup behind last follower ====
 spectator = world.get_spectator()
@@ -105,7 +106,7 @@ plotter = LivePlotter(vehicle_labels)
 
 try:
     while True:
-        leader_controller.run_step()
+        # leader_controller.run_step()
 
         for controller in follower_controllers:
             controller.update()
@@ -185,8 +186,13 @@ try:
         driver_view_tf = carla.Transform(driver_world_loc, vehicle_tf.rotation)
 
         # Apply to spectator
-        spectator = world.get_spectator()
-        spectator.set_transform(driver_view_tf)
+        # spectator = world.get_spectator()
+        # spectator.set_transform(driver_view_tf)
+        # === Camera: Follow last follower ===
+        back_vector = last_follower_tf.get_forward_vector() * -20
+        camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
+        camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
+        spectator.set_transform(camera_tf)
 
         # === Debug: Draw labels above vehicles ===
         leader_loc = leader.get_transform().location + carla.Location(z=2)
