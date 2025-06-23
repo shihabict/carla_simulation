@@ -15,7 +15,7 @@ from leader_controller import LeaderController
 # ==== CARLA Client Setup ====
 client = carla.Client('localhost', 2000)
 client.set_timeout(10.0)
-world = client.load_world('Town03')
+world = client.load_world('Town05')
 map = world.get_map()
 bp_lib = world.get_blueprint_library()
 tm = client.get_trafficmanager()
@@ -36,7 +36,7 @@ follower_bp = bp_lib.find('vehicle.audi.tt')
 leader = world.try_spawn_actor(leader_bp, leader_spawn)
 
 # ==== Spawn N Followers ====
-num_followers = 2  # Change this value to spawn more followers
+num_followers = 3  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
@@ -78,7 +78,7 @@ for i in range(num_followers):
 # ==== Generate Custom Path for Leader ====
 leader_start_wp = map.get_waypoint(leader.get_location())
 leader_path = [leader_start_wp]
-for _ in range(200):
+for _ in range(50):
     leader_path.append(leader_path[-1].next(2.0)[0])
 
 # leader_controller = LeaderController(leader, leader_path)
