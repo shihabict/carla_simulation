@@ -31,26 +31,43 @@ world.set_weather(carla.WeatherParameters.CloudyNoon)
 
 # ==== Spawn Points ====
 spawn_points = map.get_spawn_points()
-leader_index = 1
-leader_spawn = spawn_points[leader_index]
+
+spawn_points = world.get_map().get_spawn_points()
+
+if not spawn_points:
+    print("⚠️ No spawn points found. Using manual transforms.")
+    leader_transform = carla.Transform(carla.Location(x=20, y=5, z=5), carla.Rotation(yaw=0))
+    # follower_transform = carla.Transform(carla.Location(x=10, y=5, z=1), carla.Rotation(yaw=0))
+else:
+    leader_transform = spawn_points[0]
+    # follower_transform = spawn_points[1]
 
 # ==== Vehicle Blueprints ====
 leader_bp = bp_lib.find('vehicle.tesla.model3')
 follower_bp = bp_lib.find('vehicle.audi.tt')
 
+# leader = world.try_spawn_actor(leader_bp, leader_transform)
+# follower = world.try_spawn_actor(follower_bp, follower_transform)
+
+
+# leader_index = 1
+# leader_spawn = spawn_points[leader_index]
+
+
+
 # ==== Spawn Leader ====
-leader = world.try_spawn_actor(leader_bp, leader_spawn)
+leader = world.try_spawn_actor(leader_bp, leader_transform)
 
 # ==== Spawn N Followers ====
-num_followers = 3  # Change this value to spawn more followers
+num_followers = 2  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
 previous_vehicle = leader
 for i in range(num_followers):
     offset = carla.Location(x=-(i + 1) * 8)
-    spawn_location = leader_spawn.transform(offset)
-    spawn_transform = carla.Transform(spawn_location, leader_spawn.rotation)
+    spawn_location = leader_transform.transform(offset)
+    spawn_transform = carla.Transform(spawn_location, leader_transform.rotation)
 
     follower = world.try_spawn_actor(follower_bp, spawn_transform)
     if follower is None:
@@ -87,9 +104,9 @@ leader_path = [leader_start_wp]
 for _ in range(50):
     leader_path.append(leader_path[-1].next(2.0)[0])
 
-# leader_controller = LeaderController(leader, leader_path)
-
-leader.set_autopilot(True, tm.get_port())
+leader_controller = LeaderController(leader, leader_path)
+#
+# leader.set_autopilot(True, tm.get_port())
 
 # ==== Camera Setup behind last follower ====
 spectator = world.get_spectator()
@@ -112,7 +129,11 @@ plotter = LivePlotter(vehicle_labels)
 
 try:
     while True:
-        # leader_controller.run_step()
+        leader_wp = map.get_waypoint(leader.get_location())
+        if leader_wp.road_id == 1 and leader_wp.s >= 995:
+            print("Leader reached the end of the road. Exiting simulation.")
+            break
+        leader_controller.run_step()
 
         for controller in follower_controllers:
             controller.update()
@@ -212,7 +233,7 @@ try:
 
         for i, follower in enumerate(followers):
             label = f"Follower {i + 1}"
-            loc = follower.get_transform().location + carla.Location(z=2)
+            loc = follower.get_transform().location + carla.Location(z=3)
             world.debug.draw_string(
                 loc,
                 label,
