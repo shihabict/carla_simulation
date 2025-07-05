@@ -2,7 +2,7 @@
 <OpenDRIVE>
     <header revMajor="1" revMinor="4" name="SingleLaneWideRoad" version="1.0"/>
 
-    <road name="WideRoad" length="1000.0" id="1" junction="-1">
+    <road name="WideRoad" length="1500.0" id="1" junction="-1">
         <planView>
             <geometry s="0.0" x="0.0" y="0.0" hdg="0.0" length="1000.0">
                 <line/>

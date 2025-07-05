@@ -87,5 +87,5 @@ class FollowerController:
         steer = (1 - alpha) * self.last_steer + alpha * raw_steer
         self.last_steer = steer
 
-        control = carla.VehicleControl(throttle=throttle, brake=brake, steer=steer)
+        control = carla.VehicleControl(throttle=throttle, brake=brake)
         self.follower.apply_control(control)

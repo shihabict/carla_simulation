@@ -6,11 +6,8 @@ from idm_controller import IDMController
 from follower_stopper import FollowerStopperController
 from live_plotter import LivePlotter
 from data_logger import DataLogger
-# from idm_controller import IDMController
 from follower_controller_v2 import FollowerController
 from leader_controller import LeaderController
-
-# from research.follower_stopper import FollowerStopperController
 
 # ==== CARLA Client Setup ====
 client = carla.Client('localhost', 2000)
@@ -26,9 +23,6 @@ map = world.get_map()
 bp_lib = world.get_blueprint_library()
 tm = client.get_trafficmanager()
 
-# ==== Weather Setup ====
-world.set_weather(carla.WeatherParameters.CloudyNoon)
-
 # ==== Spawn Points ====
 spawn_points = map.get_spawn_points()
 
@@ -36,7 +30,7 @@ spawn_points = world.get_map().get_spawn_points()
 
 if not spawn_points:
     print("⚠️ No spawn points found. Using manual transforms.")
-    leader_transform = carla.Transform(carla.Location(x=20, y=5, z=5), carla.Rotation(yaw=0))
+    leader_transform = carla.Transform(carla.Location(x=20, y=5, z=7), carla.Rotation(yaw=0))
     # follower_transform = carla.Transform(carla.Location(x=10, y=5, z=1), carla.Rotation(yaw=0))
 else:
     leader_transform = spawn_points[0]
@@ -46,15 +40,6 @@ else:
 leader_bp = bp_lib.find('vehicle.tesla.model3')
 follower_bp = bp_lib.find('vehicle.audi.tt')
 
-# leader = world.try_spawn_actor(leader_bp, leader_transform)
-# follower = world.try_spawn_actor(follower_bp, follower_transform)
-
-
-# leader_index = 1
-# leader_spawn = spawn_points[leader_index]
-
-
-
 # ==== Spawn Leader ====
 leader = world.try_spawn_actor(leader_bp, leader_transform)
 
@@ -63,9 +48,12 @@ num_followers = 2  # Change this value to spawn more followers
 followers = []
 follower_controllers = []
 
+idm = IDMController()
+fs = FollowerStopperController(U=7.5)
+
 previous_vehicle = leader
 for i in range(num_followers):
-    offset = carla.Location(x=-(i + 1) * 8)
+    offset = carla.Location(x=-(i + 1) * 8,z=7)
     spawn_location = leader_transform.transform(offset)
     spawn_transform = carla.Transform(spawn_location, leader_transform.rotation)
 
@@ -75,21 +63,19 @@ for i in range(num_followers):
         continue
 
     # Apply physics damping
-    physics_control = follower.get_physics_control()
-    physics_control.linear_damping = 1
-    physics_control.angular_damping = 1.5
-    for wheel in physics_control.wheels:
-        wheel.damping_rate = 3.0
-        wheel.max_steer_angle = 60.0
-    follower.apply_physics_control(physics_control)
+    # physics_control = follower.get_physics_control()
+    # physics_control.linear_damping = 1
+    # physics_control.angular_damping = 1.5
+    # for wheel in physics_control.wheels:
+    #     wheel.damping_rate = 3.0
+    #     wheel.max_steer_angle = 60.0
+    # follower.apply_physics_control(physics_control)
 
     # idm = IDMController()
     # controller = FollowerController(world, follower, previous_vehicle, idm)
 
     # controller = FollowerController(world, follower, leader, FollowerStopperController(U=15))
 
-    idm = IDMController()
-    fs = FollowerStopperController(U=7.5)
 
     controller = FollowerController(world, follower, previous_vehicle, idm, fs, switch_time=20)
 
@@ -102,17 +88,15 @@ for i in range(num_followers):
 leader_start_wp = map.get_waypoint(leader.get_location())
 leader_path = [leader_start_wp]
 for _ in range(50):
-    leader_path.append(leader_path[-1].next(2.0)[0])
+    leader_path.append(leader_path[-1].next(1.0)[0])
 
 leader_controller = LeaderController(leader, leader_path)
-#
-# leader.set_autopilot(True, tm.get_port())
 
 # ==== Camera Setup behind last follower ====
 spectator = world.get_spectator()
 last_follower_tf = followers[-1].get_transform()
 back_vector = last_follower_tf.get_forward_vector() * -16
-camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
+camera_location = last_follower_tf.location + back_vector + carla.Location(z=7)
 camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
 spectator.set_transform(camera_tf)
 if 'smoothed_camera_tf' not in locals():
@@ -213,8 +197,8 @@ try:
         driver_view_tf = carla.Transform(driver_world_loc, vehicle_tf.rotation)
 
         # Apply to spectator
-        # spectator = world.get_spectator()
-        # spectator.set_transform(driver_view_tf)
+        spectator = world.get_spectator()
+        spectator.set_transform(driver_view_tf)
         # === Camera: Follow last follower ===
         back_vector = last_follower_tf.get_forward_vector() * -20
         camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)

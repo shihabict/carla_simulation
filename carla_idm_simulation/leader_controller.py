@@ -39,10 +39,10 @@ class LeaderController:
 
         # print(f"Distance is {vehicle_loc.distance(target_loc)}")
 
-        if vehicle_loc.distance(target_loc) < 2.0:
-            # print(f"Distance is {vehicle_loc.distance(target_loc)}")
-            self.index += 1
-            return
+        # if vehicle_loc.distance(target_loc) < 2.0:
+        #     # print(f"Distance is {vehicle_loc.distance(target_loc)}")
+        #     self.index += 1
+        #     return
 
         # Compute steering angle
         v_target = target_loc - vehicle_loc
