@@ -3,8 +3,6 @@ import random
 import cv2
 import numpy as np
 
-from research.load_custom_path import world
-
 # connect to the simulator
 client = carla.Client('localhost', 2000)
 # load predefine town from carla
