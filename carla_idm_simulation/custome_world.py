@@ -8,6 +8,9 @@ from live_plotter import LivePlotter
 from data_logger import DataLogger
 from follower_controller_v2 import FollowerController
 from leader_controller import LeaderController
+from settings import BASE_DIR
+
+speed_csv_path = f"{BASE_DIR}/datasets/CAN_Messages_decoded_speed.csv"
 
 # ==== CARLA Client Setup ====
 client = carla.Client('localhost', 2000)
@@ -29,7 +32,7 @@ spawn_points = map.get_spawn_points()
 spawn_points = world.get_map().get_spawn_points()
 
 if not spawn_points:
-    print("⚠️ No spawn points found. Using manual transforms.")
+    print("No spawn points found. Using manual transforms.")
     leader_transform = carla.Transform(carla.Location(x=20, y=5, z=7), carla.Rotation(yaw=0))
     # follower_transform = carla.Transform(carla.Location(x=10, y=5, z=1), carla.Rotation(yaw=0))
 else:
@@ -62,21 +65,6 @@ for i in range(num_followers):
         print(f"Follower {i+1} failed to spawn.")
         continue
 
-    # Apply physics damping
-    # physics_control = follower.get_physics_control()
-    # physics_control.linear_damping = 1
-    # physics_control.angular_damping = 1.5
-    # for wheel in physics_control.wheels:
-    #     wheel.damping_rate = 3.0
-    #     wheel.max_steer_angle = 60.0
-    # follower.apply_physics_control(physics_control)
-
-    # idm = IDMController()
-    # controller = FollowerController(world, follower, previous_vehicle, idm)
-
-    # controller = FollowerController(world, follower, leader, FollowerStopperController(U=15))
-
-
     controller = FollowerController(world, follower, previous_vehicle, idm, fs, switch_time=20)
 
     followers.append(follower)
@@ -90,7 +78,7 @@ leader_path = [leader_start_wp]
 for _ in range(50):
     leader_path.append(leader_path[-1].next(1.0)[0])
 
-leader_controller = LeaderController(leader, leader_path)
+leader_controller = LeaderController(leader, leader_path, speed_csv_path)
 
 # ==== Camera Setup behind last follower ====
 spectator = world.get_spectator()
@@ -102,10 +90,8 @@ spectator.set_transform(camera_tf)
 if 'smoothed_camera_tf' not in locals():
     smoothed_camera_tf = last_follower_tf
 
-
 # ==== Compute the vehicles label ====
 vehicle_labels = ['Leader'] + [f'Follower {i+1}' for i in range(len(followers))]
-
 
 # ==== Init Plotter and Logger ====
 logger = DataLogger(num_followers=len(followers))
@@ -114,7 +100,7 @@ plotter = LivePlotter(vehicle_labels)
 try:
     while True:
         leader_wp = map.get_waypoint(leader.get_location())
-        if leader_wp.road_id == 1 and leader_wp.s >= 995:
+        if leader_wp.road_id == 1 and leader_wp.s >= 4950:
             print("Leader reached the end of the road. Exiting simulation.")
             break
         leader_controller.run_step()
@@ -150,38 +136,6 @@ try:
         # Update plot
         elapsed_time = time.time() - logger.start_time
         plotter.update(elapsed_time, speeds)
-
-        # === Camera: Follow last follower ===
-        # back_vector = last_follower_tf.get_forward_vector() * -8
-        # camera_location = last_follower_tf.location + back_vector + carla.Location(z=3)
-        # camera_tf = carla.Transform(camera_location, last_follower_tf.rotation)
-        # spectator.set_transform(camera_tf)
-        # raw_tf = followers[-1].get_transform()
-        # back_vector = raw_tf.get_forward_vector() * -8
-        # camera_location = raw_tf.location + back_vector + carla.Location(z=3)
-        # target_tf = carla.Transform(camera_location, raw_tf.rotation)
-        #
-        # # Smooth with exponential moving average
-        # alpha = 0.1  # smoothing factor
-        #
-        # smoothed_loc = smoothed_camera_tf.location
-        # smoothed_rot = smoothed_camera_tf.rotation
-        #
-        # # Interpolate manually
-        # smoothed_loc = carla.Location(
-        #     x=smoothed_loc.x + alpha * (target_tf.location.x - smoothed_loc.x),
-        #     y=smoothed_loc.y + alpha * (target_tf.location.y - smoothed_loc.y),
-        #     z=smoothed_loc.z + alpha * (target_tf.location.z - smoothed_loc.z)
-        # )
-        #
-        # smoothed_rot = carla.Rotation(
-        #     pitch=smoothed_rot.pitch + alpha * (target_tf.rotation.pitch - smoothed_rot.pitch),
-        #     yaw=smoothed_rot.yaw + alpha * (target_tf.rotation.yaw - smoothed_rot.yaw),
-        #     roll=smoothed_rot.roll + alpha * (target_tf.rotation.roll - smoothed_rot.roll)
-        # )
-        #
-        # smoothed_camera_tf = carla.Transform(smoothed_loc, smoothed_rot)
-        # spectator.set_transform(smoothed_camera_tf)
 
         # Get the transform of the follower vehicle
         vehicle_tf = followers[-1].get_transform()
@@ -225,8 +179,6 @@ try:
                 color=carla.Color(255, 255, 0),  # Bright yellow
                 life_time=0.1
             )
-
-
 
 except KeyboardInterrupt:
     print("Simulation stopped by user")

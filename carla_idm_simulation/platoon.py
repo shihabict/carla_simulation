@@ -60,11 +60,6 @@ for i in range(num_followers):
         wheel.max_steer_angle = 60.0
     follower.apply_physics_control(physics_control)
 
-    # idm = IDMController()
-    # controller = FollowerController(world, follower, previous_vehicle, idm)
-
-    # controller = FollowerController(world, follower, leader, FollowerStopperController(U=15))
-
     idm = IDMController()
     fs = FollowerStopperController(U=15)
 
