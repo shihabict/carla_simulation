@@ -94,11 +94,13 @@ class CarlaSimulator:
         self.world.apply_settings(settings)
 
     def spawn_vehicle(self):
-        spawn_point = self.world.get_map().get_spawn_points()[0]
+        spawn_points = self.world.get_map().get_spawn_points()
+        spawn_point = spawn_points[0]
         vehicle_bp = self.bp_lib.find('vehicle.lincoln.mkz_2020')
+        spawn_point.location.x = spawn_point.location.x-500
         self.vehicle = self.world.try_spawn_actor(vehicle_bp, spawn_point)
 
-    def get_direction_vector_to_next_waypoint(self, distance_ahead=2.0):
+    def get_direction_vector_to_next_waypoint(self, distance_ahead=1.0):
         current_location = self.vehicle.get_location()
         current_wp = self.map.get_waypoint(current_location, project_to_road=True, lane_type=carla.LaneType.Driving)
 
@@ -108,47 +110,100 @@ class CarlaSimulator:
 
         next_wp = next_wp_list[0]
         direction = next_wp.transform.location - current_location
-        return direction.make_unit_vector()
+        return direction.make_unit_vector(), next_wp
+
+    def get_direction_and_next_waypoint(self, distance_ahead=2.0):
+        current_location = self.vehicle.get_location()
+        current_wp = self.map.get_waypoint(current_location, project_to_road=True, lane_type=carla.LaneType.Driving)
+
+        # Try finding the next waypoint; check all possibilities
+        try:
+            next_wp_list = current_wp.next(distance_ahead)
+            if not next_wp_list:
+                return None, None  # Gracefully return if no next point found
+
+            next_wp = next_wp_list[0]
+            direction = next_wp.transform.location - current_location
+
+            # Check if direction vector is non-zero
+            if direction.length() == 0:
+                return None, None
+
+            return direction.make_unit_vector(), next_wp
+
+        except RuntimeError as e:
+            print(f"Waypoint error: {e}")
+            return None, None
 
     def run(self):
         self.setup_simulation()
         self.spawn_vehicle()
+        # 2. Tick world once to finalize registration
+        self.world.tick()
+        # Warm-up ticks after spawn
+        # for _ in range(3):
+        #     self.world.tick()
+
+        # 3. Confirm vehicle is spawned and located on road
+        location = self.vehicle.get_location()
+        waypoint = self.map.get_waypoint(location, project_to_road=True)
+
+        if waypoint is None:
+            raise RuntimeError("Vehicle did not spawn on a valid road location.")
+
         if not self.vehicle:
             print("Vehicle spawn failed.")
             return
 
         print("Starting simulation with waypoint-following and speed profile...")
         start_time = time.time()
-
         try:
             while True:
-                sim_time = time.time() - start_time
-                target_speed = self.controller.get_speed_at(sim_time)
+                if self.vehicle:
+                    sim_time = time.time() - start_time
+                    target_speed = self.controller.get_speed_at(sim_time)
 
-                direction_vector = self.get_direction_vector_to_next_waypoint()
-                if direction_vector is None:
-                    print("No next waypoint. Ending simulation.")
-                    break
+                    direction_vector, next_wp = self.get_direction_vector_to_next_waypoint()
+                    # result = self.get_direction_and_next_waypoint()
+                    if direction_vector is None:
+                        print("No next waypoint. Ending simulation.")
+                        break
 
-                # Set velocity in direction of next waypoint
-                velocity = carla.Vector3D(
-                    direction_vector.x * target_speed,
-                    direction_vector.y * target_speed,
-                    direction_vector.z * target_speed
-                )
-                self.vehicle.set_target_velocity(velocity)
 
-                # Logging
-                self.logger.log(sim_time, self.vehicle.get_location(), self.vehicle.get_velocity())
+                    # Set velocity in direction of next waypoint
+                    velocity = carla.Vector3D(
+                        direction_vector.x * target_speed,
+                        direction_vector.y * target_speed,
+                        direction_vector.z * target_speed
+                    )
+                    self.vehicle.set_target_velocity(velocity)
 
-                # Update spectator
-                transform = carla.Transform(
-                    self.vehicle.get_transform().transform(carla.Location(x=-6, z=2.5)),
-                    self.vehicle.get_transform().rotation
-                )
-                self.spectator.set_transform(transform)
+                    # 1. Move in direction of next waypoint
+                    # velocity = carla.Vector3D(
+                    #     direction_vector.x * target_speed,
+                    #     direction_vector.y * target_speed,
+                    #     direction_vector.z * target_speed
+                    # )
+                    # self.vehicle.set_target_velocity(velocity)
+                    #
+                    # 2. Align vehicle yaw to match next waypoint heading
+                    transform = self.vehicle.get_transform()
+                    transform.rotation = next_wp.transform.rotation  # Apply next waypoint yaw
+                    self.vehicle.set_transform(transform)
 
-                self.world.tick()
+                    # Logging
+                    print(f"Current location: {self.vehicle.get_location()}, speed: {target_speed:.2f} m/s")
+
+                    self.logger.log(sim_time, self.vehicle.get_location(), self.vehicle.get_velocity())
+
+                    # Update spectator
+                    transform = carla.Transform(
+                        self.vehicle.get_transform().transform(carla.Location(x=-6, z=2.5)),
+                        self.vehicle.get_transform().rotation
+                    )
+                    self.spectator.set_transform(transform)
+
+                    self.world.tick()
 
         except KeyboardInterrupt:
             print("Simulation interrupted.")
