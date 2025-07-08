@@ -1,6 +1,6 @@
 import carla
 import matplotlib.pyplot as plt
-from settings import BASE_DIR
+from settings import BASE_DIR,ROOT_DIR
 from utils import load_xodr, create_world_from_custom_map, load_speed_profile
 
 
@@ -95,11 +95,11 @@ def plot_trajectory(trajectory):
 
 
 def main():
-    csv_path = "../datasets/CAN_Messages_decoded_speed.csv"
+    csv_path = f"{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv"
     speed_profile = load_speed_profile(csv_path)  # Must return list of (rel_time, speed_mps)
 
     client = connect_to_carla()
-    xodr_path = f"{BASE_DIR}/routes/simple_road.xodr"
+    xodr_path = f"{ROOT_DIR}/routes/simple_road.xodr"
     world = setup_world(client, xodr_path, sync=True, delta_seconds=0.05)  # 20Hz sim time
 
     leader = spawn_vehicle(world)
