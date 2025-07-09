@@ -42,7 +42,7 @@ class SimulationLogger:
         df = pd.DataFrame(self.records)
         plt.figure(figsize=(10, 6))
         for label, group in df.groupby('vehicle'):
-            plt.plot(group['time'], group['speed'], label=label)
+            plt.plot(group['time'], group['speed'], label=label, )
         plt.xlabel('Time (s)')
         plt.ylabel('Speed (m/s)')
         plt.title('Speed vs Time')

@@ -4,20 +4,25 @@ import time
 
 from idm_controller import IDMController
 from follower_vehicle import FollowerVehicle
-from research.real_data_simulation import SpeedProfileController
+from research.speed_profiler import SpeedProfileController
+# from research.real_data_simulation import SpeedProfileController
+from research.utils import create_world_from_custom_map
+from settings import ROOT_DIR
 from sim_logger import SimulationLogger
-
+from utils import load_xodr
 
 
 class CarlaSimulator:
-    def __init__(self, csv_path, num_ice_followers=3):
+    def __init__(self, csv_path, custom_map_path, num_ice_followers=3):
         self.client = carla.Client('localhost', 2000)
         self.client.set_timeout(10.0)
-        self.world = self.client.get_world()
+        self.world = self.load_custom_map(self.client, custom_map_path)
+        # self.world = self.client.get_world()
         self.map = self.world.get_map()
         self.bp_lib = self.world.get_blueprint_library()
 
         self.csv_path = csv_path
+        self.speed_controller = SpeedProfileController(self.csv_path)
         self.num_ice_followers = num_ice_followers
 
         self.leader = None
@@ -25,11 +30,18 @@ class CarlaSimulator:
         self.spectator = self.world.get_spectator()
         self.logger = SimulationLogger()
 
+    def load_custom_map(self,client, custom_map_path):
+        xodr_content = load_xodr(custom_map_path)
+        world = create_world_from_custom_map(client, xodr_content)
+        return world
+
     def setup_simulation(self):
         settings = self.world.get_settings()
-        settings.synchronous_mode = True
-        settings.fixed_delta_seconds = 0.05
-        self.delta_t = settings.fixed_delta_seconds
+        # settings.synchronous_mode = True
+        settings.synchronous_mode = False
+        # settings.fixed_delta_seconds = 0.05
+        settings.fixed_delta_seconds = None
+        # self.delta_t = settings.fixed_delta_seconds
         self.world.apply_settings(settings)
 
     def spawn_vehicle(self, blueprint_name, spawn_transform):
@@ -43,6 +55,7 @@ class CarlaSimulator:
 
         # Spawn Leader
         leader_bp = 'vehicle.lincoln.mkz_2020'
+        base_spawn.location.x = base_spawn.location.x - 500
         self.leader = self.spawn_vehicle(leader_bp, base_spawn)
         if not self.leader:
             raise RuntimeError("Failed to spawn leader vehicle.")
@@ -51,7 +64,7 @@ class CarlaSimulator:
         # Spawn Followers (10 meters apart behind the leader)
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
-            offset_distance = -(i + 1) * 10.0
+            offset_distance = (i + 1) * 10.0
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
@@ -67,12 +80,78 @@ class CarlaSimulator:
             self.followers.append(follower)
             previous_vehicle = vehicle
 
+    def run_asynchronously(self):
+        self.setup_simulation()
+        self.spawn_leader_and_followers()
+        self.world.tick()
+
+        print("Starting leader-follower simulation...")
+
+        self.speed_df = self.speed_controller.df  # Convenience alias
+        try:
+            for i in range(1, len(self.speed_df)):
+                # Step-specific timing and speed
+                sim_time = self.speed_df.loc[i, 'time_rel']
+                delta_t = self.speed_df.loc[i, 'time_diff']
+                target_speed = self.speed_df.loc[i, 'speed_mps']
+
+                # --- Leader control ---
+                direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)
+                if direction_vector is None:
+                    print("Leader has no more waypoints.")
+                    break
+
+                velocity = carla.Vector3D(
+                    direction_vector.x * target_speed,
+                    direction_vector.y * target_speed,
+                    direction_vector.z * target_speed
+                )
+                self.leader.set_target_velocity(velocity)
+
+                transform = self.leader.get_transform()
+                transform.rotation = next_wp.transform.rotation
+                self.leader.set_transform(transform)
+
+                self.logger.log(sim_time, 'leader', self.leader.get_location(), self.leader.get_velocity())
+
+                # --- Followers control ---
+                for j, follower in enumerate(self.followers):
+                    label = f'follower_{j}'
+                    follower.update(delta_t)
+                    self.logger.log(sim_time, label, follower.vehicle.get_location(), follower.vehicle.get_velocity())
+
+                    # Optional: draw debug label
+                    # self.world.debug.draw_string(
+                    #     follower.vehicle.get_location() + carla.Location(z=2.5),
+                    #     label,
+                    #     draw_shadow=False,
+                    #     color=carla.Color(255, 255, 0),
+                    #     life_time=0.1,
+                    #     persistent_lines=False
+                    # )
+
+                # --- Spectator follows last follower ---
+                last_follower = self.followers[-1].vehicle
+                cam_transform = last_follower.get_transform().transform(carla.Location(x=-8, z=10))
+                self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
+
+                # Sync CARLA to time step
+                self.world.tick()
+                time.sleep(delta_t)
+
+
+        except KeyboardInterrupt:
+            print("Simulation interrupted.")
+
+        finally:
+            self.cleanup()
+
     def run(self):
         self.setup_simulation()
         self.spawn_leader_and_followers()
         self.world.tick()
 
-        speed_controller = SpeedProfileController(self.csv_path)
+
         print("Starting leader-follower simulation...")
 
         try:
@@ -81,7 +160,7 @@ class CarlaSimulator:
                 sim_time = time.time() - start_time
 
                 # --- Leader control ---
-                target_speed = speed_controller.get_speed_at(sim_time)
+                target_speed = self.speed_controller.get_speed_at(sim_time)
                 direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)
                 if direction_vector is None:
                     break
@@ -92,19 +171,49 @@ class CarlaSimulator:
                 transform = self.leader.get_transform()
                 transform.rotation = next_wp.transform.rotation
                 self.leader.set_transform(transform)
+                leader_loc = self.leader.get_location()
+                # self.world.debug.draw_string(
+                #     leader_loc + carla.Location(z=2.5),
+                #     "Leader",
+                #     draw_shadow=False,
+                #     color=carla.Color(0, 255, 255),  # Cyan
+                #     life_time=0.1
+                # )
+
+                self.logger.log(sim_time, 'leader', self.leader.get_location(), self.leader.get_velocity())
 
                 # --- Followers control ---
-                for follower in self.followers:
+                # for follower in self.followers:
+                #     success = follower.update(self.delta_t)
+                #     if not success:
+                #         print("Follower lost waypoint.")
+                #         break
+
+                for i, follower in enumerate(self.followers):
+                    label = f'follower_{i}'
+                    # loc = follower.vehicle.get_location()
+                    # self.world.debug.draw_string(
+                    #     loc + carla.Location(z=2.5),  # Raise text above the vehicle
+                    #     label,
+                    #     draw_shadow=False,
+                    #     color=carla.Color(255, 255, 0),  # Yellow
+                    #     life_time=0.1
+                    # )
+
+                    self.logger.log(sim_time, label, follower.vehicle.get_location(), follower.vehicle.get_velocity())
+
                     success = follower.update(self.delta_t)
                     if not success:
-                        print("Follower lost waypoint.")
+                        print(f"[WARNING] {label} lost waypoint. Exiting...")
                         break
 
                 # Spectator follow leader
-                cam_transform = self.leader.get_transform().transform(carla.Location(x=-10, z=3))
+                spectator_vehicle = self.followers[-1].vehicle
+                cam_transform = spectator_vehicle.get_transform().transform(carla.Location(x=10, z=10))
                 self.spectator.set_transform(carla.Transform(cam_transform, self.leader.get_transform().rotation))
 
                 self.world.tick()
+
 
         except KeyboardInterrupt:
             print("Simulation interrupted.")
@@ -132,4 +241,13 @@ class CarlaSimulator:
         settings.synchronous_mode = False
         settings.fixed_delta_seconds = None
         self.world.apply_settings(settings)
+        # Logging and Plots
+        self.logger.save()
+        self.logger.plot_trajectories()
+        self.logger.plot_speeds()
         print("Vehicles destroyed. Simulation ended.")
+
+if __name__ == '__main__':
+    custom_map_path = f'{ROOT_DIR}/routes/custom_road.xodr'
+    sim = CarlaSimulator(f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path)
+    sim.run_asynchronously()
