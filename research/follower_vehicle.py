@@ -40,8 +40,8 @@ class FollowerVehicle:
         #     print(f"[RESTART] Follower recovering from stop: gap={gap:.2f}, lead_speed={lead_speed:.2f}")
 
         # 3. Integrate speed
-        # target_speed = max(0.0, ego_speed + acceleration * delta_t)
-        target_speed = ego_speed + acceleration * delta_t
+        target_speed = max(0.0, ego_speed + acceleration * delta_t)
+        # target_speed = ego_speed + acceleration * delta_t
         if target_speed == 0:
             print(f"EGO SPEED : {ego_speed}")
             print(f"Acceleration : {acceleration}")

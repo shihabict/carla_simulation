@@ -121,7 +121,11 @@ class CarlaSimulator:
                 for j, follower in enumerate(self.followers):
                     label = f'follower_{j}'
                     follower.update(delta_t)
-                    self.logger.log(sim_time, label, follower.vehicle.get_location(), follower.vehicle.get_velocity())
+                    gap, _ = follower.compute_gap_and_leader_speed()
+                    self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
+                                    follower.vehicle.get_velocity(), gap)
+
+                    # self.logger.log(sim_time, label, follower.vehicle.get_location(), follower.vehicle.get_velocity())
 
                     # Optional: draw debug label
                     # self.world.debug.draw_string(
@@ -248,6 +252,7 @@ class CarlaSimulator:
         self.logger.save()
         self.logger.plot_trajectories()
         self.logger.plot_speeds()
+        self.logger.plot_gap_vs_time()
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':

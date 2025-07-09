@@ -9,14 +9,16 @@ class SimulationLogger:
     def __init__(self):
         self.records = []
 
-    def log(self, timestamp, label, location, velocity):
+    def log(self, sim_time, name, location, velocity, gap=None):
         speed = np.linalg.norm([velocity.x, velocity.y, velocity.z])
         self.records.append({
-            'time': timestamp,
-            'vehicle': label,
+            'time': sim_time,
+            'name': name,
             'x': location.x,
             'y': location.y,
-            'speed': speed
+            'z': location.z,
+            'speed': speed,
+            'gap': gap
         })
 
     def save(self, filename='sim_data.csv'):
@@ -30,7 +32,7 @@ class SimulationLogger:
 
         df = pd.DataFrame(self.records)
         plt.figure(figsize=(10, 6))
-        for label, group in df.groupby('vehicle'):
+        for label, group in df.groupby('name'):
             plt.plot(group['x'], group['y'], label=label)
         plt.xlabel('X (m)')
         plt.ylabel('Y (m)')
@@ -43,7 +45,7 @@ class SimulationLogger:
     def plot_speeds(self):
         df = pd.DataFrame(self.records)
         plt.figure(figsize=(10, 6))
-        for label, group in df.groupby('vehicle'):
+        for label, group in df.groupby('name'):
             plt.plot(group['time'], group['speed'], label=label, )
         plt.xlabel('Time (s)')
         plt.ylabel('Speed (m/s)')
@@ -52,3 +54,17 @@ class SimulationLogger:
         plt.legend()
         plt.savefig('Reports/speed_vs_time.png')
         print("[Plotted] Speed profile saved to Reports/speed_vs_time.png")
+
+    def plot_gap_vs_time(self):
+        df = pd.DataFrame(self.records)
+        followers = df[df['name'].str.contains('follower')]
+        plt.figure(figsize=(10, 6))
+        for name, group in followers.groupby('name'):
+            plt.plot(group['time'], group['gap'], label=name)
+
+        plt.xlabel('Time (s)')
+        plt.ylabel('Gap to Leader (m)')
+        plt.title('Gap Between Followers and Their Leaders Over Time')
+        plt.grid()
+        plt.legend()
+        plt.savefig('Reports/gap_vs_time.png')
