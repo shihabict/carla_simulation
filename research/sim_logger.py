@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 class SimulationLogger:
     def __init__(self):
@@ -24,7 +27,7 @@ class SimulationLogger:
         print(f"[Logged] Simulation data saved to {path}")
 
     def plot_trajectories(self):
-        import matplotlib.pyplot as plt
+
         df = pd.DataFrame(self.records)
         plt.figure(figsize=(10, 6))
         for label, group in df.groupby('vehicle'):
@@ -38,7 +41,6 @@ class SimulationLogger:
         print("[Plotted] Trajectories saved to Reports/trajectories.png")
 
     def plot_speeds(self):
-        import matplotlib.pyplot as plt
         df = pd.DataFrame(self.records)
         plt.figure(figsize=(10, 6))
         for label, group in df.groupby('vehicle'):

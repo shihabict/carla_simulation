@@ -87,13 +87,16 @@ class CarlaSimulator:
 
         print("Starting leader-follower simulation...")
 
-        self.speed_df = self.speed_controller.df  # Convenience alias
+        speed_df = self.speed_controller.df  # Convenience alias
         try:
-            for i in range(1, len(self.speed_df)):
+            for i in range(1, len(speed_df)):
+            # for i in range(1, 7000):
                 # Step-specific timing and speed
-                sim_time = self.speed_df.loc[i, 'time_rel']
-                delta_t = self.speed_df.loc[i, 'time_diff']
-                target_speed = self.speed_df.loc[i, 'speed_mps']
+                sim_time = speed_df.loc[i, 'time_rel']
+                delta_t = speed_df.loc[i, 'time_diff']
+                target_speed = speed_df.loc[i, 'speed_mps']
+                # if target_speed == 0:
+                #     print(0)
 
                 # --- Leader control ---
                 direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)

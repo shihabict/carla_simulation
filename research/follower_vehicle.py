@@ -28,13 +28,25 @@ class FollowerVehicle:
     def update(self, delta_t):
         # 1. Get current speed, leader gap and speed
         ego_speed = self.get_speed()
+
         gap, lead_speed = self.compute_gap_and_leader_speed()
 
         # 2. IDM acceleration
         acceleration = self.controller.compute_acceleration(ego_speed, lead_speed, gap)
 
+        # Deadlock fix: gently push if leader is moving and gap is large enough
+        # if ego_speed < 0.01 and lead_speed > 0.5 and gap > self.controller.s0 + 2.0:
+        #     acceleration = 0.5  # gentle push to start moving again
+        #     print(f"[RESTART] Follower recovering from stop: gap={gap:.2f}, lead_speed={lead_speed:.2f}")
+
         # 3. Integrate speed
-        target_speed = max(0.0, ego_speed + acceleration * delta_t)
+        # target_speed = max(0.0, ego_speed + acceleration * delta_t)
+        target_speed = ego_speed + acceleration * delta_t
+        if target_speed == 0:
+            print(f"EGO SPEED : {ego_speed}")
+            print(f"Acceleration : {acceleration}")
+            print(f"Delta t : {delta_t}")
+        # target_speed = min(0.0, ego_speed + acceleration * delta_t)
 
         # 4. Get forward direction from waypoint
         current_loc = self.vehicle.get_location()

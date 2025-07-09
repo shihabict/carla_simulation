@@ -1,8 +1,8 @@
 import numpy as np
 
 class IDMController:
-    def __init__(self, desired_speed=20.0, max_accel=2.0, comfortable_brake=1.5,
-                 min_gap=2.5, time_headway=2, delta=2):
+    def __init__(self, desired_speed=20.0, max_accel=2.0, comfortable_brake=2.5,
+                 min_gap=4, time_headway=2, delta=4):
         """
         desired_speed: v0 (m/s)
         max_accel: a_max (m/s^2)
@@ -29,8 +29,13 @@ class IDMController:
         lead_v: leader vehicle speed (m/s)
         gap: distance to leader (m)
         """
+        # if ego_v < 0.1 and gap > self.s0 + 1.5 and lead_v > 0.3:
+        #     return 0.5  # Force a gentle restart
         delta_v = ego_v - lead_v
         s_star = self.desired_gap(ego_v, delta_v)
+        # s_star = min(s_star, gap * 2)  # avoid s*/s >> 1
 
-        acc = self.a_max * (1 - (ego_v / self.v0) ** self.delta - (s_star / gap) ** 2) if gap > 0.1 else -self.b
+        # acc = self.a_max * (1 - (ego_v / self.v0) ** self.delta - (s_star / gap) ** 2) if gap > 0.1 else -self.b
+        acc = self.a_max * (1 - (ego_v / self.v0) ** self.delta - (s_star / gap) ** 2)
         return np.clip(acc, -self.b, self.a_max)
+
