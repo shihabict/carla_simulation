@@ -24,7 +24,7 @@ class SimulationLogger:
             'gap': gap
         })
 
-    def save(self, filename='sim_data.csv'):
+    def save(self, filename=f'sim_data_{EXP_NAME}.csv'):
         df = pd.DataFrame(self.records)
         os.makedirs('Reports', exist_ok=True)
         path = os.path.join('Reports', filename)

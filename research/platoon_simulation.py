@@ -4,6 +4,7 @@ import time
 
 from idm_controller import IDMController
 from follower_vehicle import FollowerVehicle
+from fs_controller import FollowerStopperController
 from research.speed_profiler import SpeedProfileController
 # from research.real_data_simulation import SpeedProfileController
 from research.utils import create_world_from_custom_map
@@ -64,7 +65,7 @@ class CarlaSimulator:
         # Spawn Followers (10 meters apart behind the leader)
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
-            offset_distance = (i + 1) * 10.0
+            offset_distance = (i + 1) * 20.0
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
@@ -75,8 +76,13 @@ class CarlaSimulator:
             print(f"[Follower {i} Spawned]")
 
             # Attach IDM controller
-            idm = IDMController()
-            follower = FollowerVehicle(vehicle, self.map, idm, previous_vehicle)
+            # idm = IDMController()
+            # follower = FollowerVehicle(vehicle, self.map, idm, previous_vehicle)
+
+            # Attach FS
+            fs_controller = FollowerStopperController()
+            follower = FollowerVehicle(vehicle, self.map, fs_controller, previous_vehicle)
+
             self.followers.append(follower)
             previous_vehicle = vehicle
 
@@ -89,8 +95,8 @@ class CarlaSimulator:
 
         speed_df = self.speed_controller.df  # Convenience alias
         try:
-            for i in range(1, len(speed_df)):
-            # for i in range(100, 7000):
+            # for i in range(1, len(speed_df)):
+            for i in range(100, 7000):
                 # Step-specific timing and speed
                 sim_time = speed_df.loc[i, 'time_rel']
                 delta_t = speed_df.loc[i, 'time_diff']
@@ -137,7 +143,7 @@ class CarlaSimulator:
                     #     follower.vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
                     label = f'follower_{j}'
                     # follower.leader.set_target_velocity(previous_leader_vel)
-                    follower.update(delta_t)
+                    follower.update_fs()
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
                     previous_leader_vel = follower.vehicle.get_velocity()
                     # if target_speed == 0:
@@ -228,10 +234,10 @@ class CarlaSimulator:
                     #     color=carla.Color(255, 255, 0),  # Yellow
                     #     life_time=0.1
                     # )
-
+                    success = follower.update_fs(self.delta_t)
                     self.logger.log(sim_time, label, follower.vehicle.get_location(), follower.vehicle.get_velocity())
 
-                    success = follower.update(self.delta_t)
+
                     if not success:
                         print(f"[WARNING] {label} lost waypoint. Exiting...")
                         break

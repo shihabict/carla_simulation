@@ -71,3 +71,43 @@ class FollowerVehicle:
         self.vehicle.set_transform(transform)
 
         return True
+
+    def update_fs(self):
+        # 1. Get current speed and gap
+        ego_speed = self.get_speed()
+        gap, lead_speed = self.compute_gap_and_leader_speed()
+        rel_speed = lead_speed - ego_speed  # dv
+
+        # 2. FollowerStopper: compute commanded velocity
+        reference_speed = 25.0  # fixed for now
+        commanded_speed = self.controller.compute_velocity_command(
+            r=reference_speed,
+            dx=gap,
+            dv=rel_speed,
+            v_AV=ego_speed
+        )
+
+        # 3. Get direction from waypoint
+        current_loc = self.vehicle.get_location()
+        current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
+        next_wp_list = current_wp.next(self.lookahead)
+
+        if not next_wp_list:
+            return False  # No more waypoints
+
+        next_wp = next_wp_list[0]
+        direction = (next_wp.transform.location - current_loc).make_unit_vector()
+
+        # 4. Apply target velocity
+        velocity = carla.Vector3D(direction.x * commanded_speed,
+                                  direction.y * commanded_speed,
+                                  direction.z * commanded_speed)
+        self.vehicle.set_target_velocity(velocity)
+
+        # 5. Apply yaw alignment
+        transform = self.vehicle.get_transform()
+        transform.rotation = next_wp.transform.rotation
+        self.vehicle.set_transform(transform)
+
+        return True
+
