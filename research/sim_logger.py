@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib
+
+from research.settings import EXP_NAME
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -39,7 +42,7 @@ class SimulationLogger:
         plt.title('Vehicle Trajectories')
         plt.grid()
         plt.legend()
-        plt.savefig('Reports/trajectories.png')
+        plt.savefig(f'Reports/trajectories_{EXP_NAME}.png')
         print("[Plotted] Trajectories saved to Reports/trajectories.png")
 
     def plot_speeds(self):
@@ -52,8 +55,8 @@ class SimulationLogger:
         plt.title('Speed vs Time')
         plt.grid()
         plt.legend()
-        plt.savefig('Reports/speed_vs_time.png')
-        print("[Plotted] Speed profile saved to Reports/speed_vs_time.png")
+        plt.savefig(f'Reports/speed_vs_time_{EXP_NAME}.png')
+        print(f"[Plotted] Speed profile saved to Reports/speed_vs_time{EXP_NAME}.png")
 
     def plot_gap_vs_time(self):
         df = pd.DataFrame(self.records)
@@ -67,4 +70,4 @@ class SimulationLogger:
         plt.title('Gap Between Followers and Their Leaders Over Time')
         plt.grid()
         plt.legend()
-        plt.savefig('Reports/gap_vs_time.png')
+        plt.savefig(f'Reports/gap_vs_time_gap_{EXP_NAME}.png')

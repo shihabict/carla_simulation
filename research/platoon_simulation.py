@@ -90,13 +90,14 @@ class CarlaSimulator:
         speed_df = self.speed_controller.df  # Convenience alias
         try:
             for i in range(1, len(speed_df)):
-            # for i in range(1, 7000):
+            # for i in range(100, 7000):
                 # Step-specific timing and speed
                 sim_time = speed_df.loc[i, 'time_rel']
                 delta_t = speed_df.loc[i, 'time_diff']
                 target_speed = speed_df.loc[i, 'speed_mps']
                 # if target_speed == 0:
-                #     print(0)
+                    # print(f"Sim Time : {sim_time}")
+                    # print("------------------------------")
 
                 # --- Leader control ---
                 direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)
@@ -109,7 +110,18 @@ class CarlaSimulator:
                     direction_vector.y * target_speed,
                     direction_vector.z * target_speed
                 )
+                # if target_speed == 0:
+                #     print(velocity)
+                #     previous_velocity = self.leader.get_velocity()
+                #     print(previous_velocity)
+                #     print('*******************************************')
+                #     self.leader.set_target_velocity(velocity)
+                #     updated_velocity = self.leader.get_velocity()
+                #     print(updated_velocity)
+
                 self.leader.set_target_velocity(velocity)
+                self.leader.set_target_angular_velocity(velocity)
+
 
                 transform = self.leader.get_transform()
                 transform.rotation = next_wp.transform.rotation
@@ -118,10 +130,20 @@ class CarlaSimulator:
                 self.logger.log(sim_time, 'leader', self.leader.get_location(), self.leader.get_velocity())
 
                 # --- Followers control ---
+                previous_leader_vel = velocity
                 for j, follower in enumerate(self.followers):
+                    if target_speed == 0:
+                        print(self.leader.get_velocity())
+                    #     follower.vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
                     label = f'follower_{j}'
+                    # follower.leader.set_target_velocity(previous_leader_vel)
                     follower.update(delta_t)
-                    gap, _ = follower.compute_gap_and_leader_speed()
+                    gap, leader_speed = follower.compute_gap_and_leader_speed()
+                    previous_leader_vel = follower.vehicle.get_velocity()
+                    # if target_speed == 0:
+                    #     print(f"Sim Time : {sim_time} leader speed {target_speed}")
+                    #     print(f"{label}:{follower.vehicle.id} \nspeed {follower.vehicle.get_velocity()} \ngap {gap} \nlocation {follower.vehicle.get_location()} \n\nleader ID {follower.leader.id} \n speed {follower.leader.get_velocity()} \nlocation {follower.leader.get_location()}")
+                    #     print("------------------------------")
                     self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
                                     follower.vehicle.get_velocity(), gap)
 
@@ -256,6 +278,6 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    custom_map_path = f'{ROOT_DIR}/routes/custom_road.xodr'
+    custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     sim = CarlaSimulator(f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path)
     sim.run_asynchronously()

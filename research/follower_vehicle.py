@@ -42,10 +42,10 @@ class FollowerVehicle:
         # 3. Integrate speed
         target_speed = max(0.0, ego_speed + acceleration * delta_t)
         # target_speed = ego_speed + acceleration * delta_t
-        if target_speed == 0:
-            print(f"EGO SPEED : {ego_speed}")
-            print(f"Acceleration : {acceleration}")
-            print(f"Delta t : {delta_t}")
+        # if target_speed == 0:
+        #     print(f"EGO SPEED : {ego_speed}")
+        #     print(f"Acceleration : {acceleration}")
+        #     print(f"Delta t : {delta_t}")
         # target_speed = min(0.0, ego_speed + acceleration * delta_t)
 
         # 4. Get forward direction from waypoint

@@ -17,7 +17,7 @@ client = carla.Client('localhost', 2000)
 client.set_timeout(10.0)
 # world = client.load_world('Town05')
 
-with open("../routes/singleLane.xodr", "r") as f:
+with open("../datasets/singleLane.xodr", "r") as f:
     xodr_content = f.read()
 
 world = client.generate_opendrive_world(xodr_content)

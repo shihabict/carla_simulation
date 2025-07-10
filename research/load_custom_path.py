@@ -1,7 +1,7 @@
 # In your CARLA Python script:
 # from carla import OpenDriveParser
 import carla
-xodr_file = "../routes/custom_road.xodr"
+xodr_file = "../routes/road_with_object.xodr"
 with open(xodr_file, 'r') as f:
     opendrive_data = f.read()
 

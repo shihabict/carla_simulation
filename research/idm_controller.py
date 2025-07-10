@@ -1,8 +1,8 @@
 import numpy as np
 
 class IDMController:
-    def __init__(self, desired_speed=30.0, max_accel=1.5, comfortable_brake=2.5,
-                 min_gap=3, time_headway=2, delta=4):
+    def __init__(self, desired_speed=25.0, max_accel=2.6, comfortable_brake=3.0,
+                 min_gap=3.0, time_headway=4, delta=4):
         """
         desired_speed: v0 (m/s)
         max_accel: a_max (m/s^2)

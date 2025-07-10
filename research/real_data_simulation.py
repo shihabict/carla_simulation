@@ -223,6 +223,6 @@ class CarlaSimulator:
 
 
 if __name__ == '__main__':
-    custom_map_path = f'{ROOT_DIR}/routes/custom_road.xodr'
+    custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     sim = CarlaSimulator(f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path)
     sim.run()
