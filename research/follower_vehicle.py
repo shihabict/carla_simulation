@@ -1,10 +1,10 @@
 import carla
 import numpy as np
-from idm_controller import IDMController
+# from idm_controller import IDMController
 
 class FollowerVehicle:
     def __init__(self, vehicle_actor: carla.Vehicle, map_ref: carla.Map,
-                 controller: IDMController, leader_vehicle: carla.Vehicle, waypoint_lookahead=2.0):
+                 controller, leader_vehicle: carla.Vehicle, waypoint_lookahead=2.0):
         self.vehicle = vehicle_actor
         self.map = map_ref
         self.controller = controller
@@ -13,22 +13,23 @@ class FollowerVehicle:
 
     def get_speed(self):
         v = self.vehicle.get_velocity()
-        return np.linalg.norm([v.x, v.y, v.z])
+        return np.linalg.norm([v.x, v.y])
 
     def compute_gap_and_leader_speed(self):
         ego_loc = self.vehicle.get_location()
         leader_loc = self.leader.get_location()
         gap = ego_loc.distance(leader_loc)
+        # gap = round(gap,3)
 
         lead_velocity = self.leader.get_velocity()
-        lead_speed = np.linalg.norm([lead_velocity.x, lead_velocity.y, lead_velocity.z])
+        lead_speed = np.linalg.norm([lead_velocity.x],ord=2)
+        # lead_speed = lead_velocity
 
         return gap, lead_speed
 
-    def update(self, delta_t):
+    def update_idm(self, delta_t):
         # 1. Get current speed, leader gap and speed
         ego_speed = self.get_speed()
-
         gap, lead_speed = self.compute_gap_and_leader_speed()
 
         # 2. IDM acceleration
@@ -64,13 +65,14 @@ class FollowerVehicle:
                                   direction.y * target_speed,
                                   direction.z * target_speed)
         self.vehicle.set_target_velocity(velocity)
+        self.leader.set_target_angular_velocity(velocity)
 
         # 6. Apply yaw alignment
         transform = self.vehicle.get_transform()
         transform.rotation = next_wp.transform.rotation
         self.vehicle.set_transform(transform)
 
-        return True
+        return np.linalg.norm([velocity.x])
 
     def update_fs(self):
         # 1. Get current speed and gap
@@ -79,13 +81,14 @@ class FollowerVehicle:
         rel_speed = lead_speed - ego_speed  # dv
 
         # 2. FollowerStopper: compute commanded velocity
-        reference_speed = 25.0  # fixed for now
+        reference_speed = 15.0  # fixed for now
         commanded_speed = self.controller.compute_velocity_command(
             r=reference_speed,
             dx=gap,
             dv=rel_speed,
             v_AV=ego_speed
         )
+        # commanded_speed = round(commanded_speed,3)
 
         # 3. Get direction from waypoint
         current_loc = self.vehicle.get_location()
@@ -99,15 +102,14 @@ class FollowerVehicle:
         direction = (next_wp.transform.location - current_loc).make_unit_vector()
 
         # 4. Apply target velocity
-        velocity = carla.Vector3D(direction.x * commanded_speed,
-                                  direction.y * commanded_speed,
-                                  direction.z * commanded_speed)
+        velocity = carla.Vector3D(direction.x * commanded_speed)
         self.vehicle.set_target_velocity(velocity)
+        self.leader.set_target_angular_velocity(velocity)
 
         # 5. Apply yaw alignment
         transform = self.vehicle.get_transform()
         transform.rotation = next_wp.transform.rotation
         self.vehicle.set_transform(transform)
 
-        return True
+        return commanded_speed
 

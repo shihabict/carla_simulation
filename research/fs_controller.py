@@ -16,18 +16,24 @@ class FollowerStopperController:
         - dv: relative velocity (v_lead - v_AV) [m/s]
         - v_AV: current velocity of the AV (ego vehicle) [m/s]
         """
-        # Clamp dv to ≤ 0 (no positive closing rates allowed)
-        dv = min(dv, 0)
+
 
         dx_mid = (self.dx_min + self.dx_activate) / 2.0
         v_lead = v_AV + dv
         v_lead = max(v_lead, 0.0)  # lead vehicle can't go backward
         v = min(r, v_lead)         # desired speed capped by leader's velocity
+        # v = v_lead
+
+        # Clamp dv to ≤ 0 (no positive closing rates allowed)
+        dv = min(dv, 0)
 
         # Band boundaries
-        dx1 = self.dx_min + (dv ** 2) / (2 * self.decel[0])
-        dx2 = dx_mid + (dv ** 2) / (2 * self.decel[1])
-        dx3 = self.dx_activate + (dv ** 2) / (2 * self.decel[2])
+        dx1 = self.dx_min + (1/(2*self.decel[0])) * dv**2
+        # dx1 = self.dx_min + (dv ** 2) / (2 * self.decel[0])
+        dx2 = dx_mid + (1/(2*self.decel[1])) * dv**2
+        # dx2 = dx_mid + (dv ** 2) / (2 * self.decel[1])
+        dx3 = self.dx_activate + (1/(2*self.decel[2])) * dv**2
+        # dx3 = self.dx_activate + (dv ** 2) / (2 * self.decel[2])
 
         # Piecewise logic
         if dx < dx1:

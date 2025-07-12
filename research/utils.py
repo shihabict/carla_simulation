@@ -148,3 +148,20 @@ def apply_speed_profile_realtime(vehicle, speed_profile):
         # Optional: print current vs. target speed for debugging
         # print(f"t={rel_time:.2f}s, set {target_speed:.2f} m/s, current {current_speed:.2f} m/s")
 
+class CustomVector3D:
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def round_components(self, decimals=0):
+        self.x = round(self.x, decimals)
+        self.y = round(self.y, decimals)
+        self.z = round(self.z, decimals)
+
+    def __repr__(self):
+        return f"Vector3D({self.x}, {self.y}, {self.z})"
+
+def truncate_float(number, digits=3):
+    factor = 10.0 ** digits
+    return int(number * factor) / factor
