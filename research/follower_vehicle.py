@@ -1,5 +1,9 @@
 import carla
 import numpy as np
+
+from nominal_contoller import NominalController
+
+
 # from idm_controller import IDMController
 
 class FollowerVehicle:
@@ -11,6 +15,7 @@ class FollowerVehicle:
         self.leader = leader_vehicle
         self.lookahead = waypoint_lookahead
         self.vehicle_length = 4.5
+        self.nominal_controller = NominalController(dt=0.1)
 
     def get_speed(self):
         v = self.vehicle.get_velocity()
@@ -25,6 +30,8 @@ class FollowerVehicle:
         lead_velocity = self.leader.get_velocity()
         lead_speed = np.linalg.norm([lead_velocity.x],ord=2)
         # lead_speed = lead_velocity
+        # substruct vehicle length from the distance
+        gap = gap - self.vehicle_length
 
         return gap, lead_speed
 
@@ -79,15 +86,15 @@ class FollowerVehicle:
         # 1. Get current speed and gap
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
-        # add vehicle length with the gap
-        gap = gap - self.vehicle_length
-        # if gap <= 4.6:
-        #     print(f"Gap {gap} is less then 4.6 ")
-        #     gap = 0
+
         rel_speed = lead_speed - ego_speed  # dv
 
+        # compute reference velocity
+        reference_speed = self.nominal_controller.get_reference_speed(ego_speed)
+
         # 2. FollowerStopper: compute commanded velocity
-        reference_speed = 15.0  # fixed for now
+        # reference_speed = 15.0  # fixed for now
+        # print(f"")
         commanded_speed = self.controller.compute_velocity_command(
             r=reference_speed,
             dx=gap,
@@ -117,5 +124,5 @@ class FollowerVehicle:
         transform.rotation = next_wp.transform.rotation
         self.vehicle.set_transform(transform)
 
-        return commanded_speed
+        return commanded_speed, reference_speed
 
