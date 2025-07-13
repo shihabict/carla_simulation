@@ -72,7 +72,7 @@ class CarlaSimulator:
         # Spawn Followers (8 meters apart behind the leader)
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
-            offset_distance = (i + 1) * 8.0
+            offset_distance = (i + 1) * 12.0
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
@@ -153,8 +153,8 @@ class CarlaSimulator:
                     else:
                         command_velocity = follower.update_idm(delta_t)
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
-                    if gap <1 :
-                        print(f"Follower {j} and Leader {j-1} speed {leader_speed} : GAP : {gap} and command velocity {command_velocity}")
+                    # if gap < 5 :
+                    #     print(f"Follower {j} and Leader {j-1} speed {leader_speed} : GAP : {gap} and command velocity {command_velocity}")
                     previous_leader_vel = follower.vehicle.get_velocity()
                     # print(f"Follower {follower.vehicle.id} and Leader {follower.leader.id} speed {leader_speed} : GAP : {gap} and command velocity {command_velocity}")
                     # if target_speed == 0:
@@ -172,7 +172,7 @@ class CarlaSimulator:
 
             # Sync CARLA to time step
                 self.world.tick()
-                # time.sleep(delta_t)
+                time.sleep(0.01)
 
 
         except KeyboardInterrupt:
@@ -286,5 +286,5 @@ class CarlaSimulator:
 if __name__ == '__main__':
     controller_name = "FS"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=1)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6)
     sim.run_asynchronously()

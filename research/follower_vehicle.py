@@ -80,9 +80,10 @@ class FollowerVehicle:
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         # add vehicle length with the gap
-        # gap = gap + self.vehicle_length
-        if gap <= 4.6:
-            gap = 0
+        gap = gap - self.vehicle_length
+        # if gap <= 4.6:
+        #     print(f"Gap {gap} is less then 4.6 ")
+        #     gap = 0
         rel_speed = lead_speed - ego_speed  # dv
 
         # 2. FollowerStopper: compute commanded velocity
