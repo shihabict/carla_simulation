@@ -10,6 +10,7 @@ class FollowerVehicle:
         self.controller = controller
         self.leader = leader_vehicle
         self.lookahead = waypoint_lookahead
+        self.vehicle_length = 4.5
 
     def get_speed(self):
         v = self.vehicle.get_velocity()
@@ -78,6 +79,10 @@ class FollowerVehicle:
         # 1. Get current speed and gap
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
+        # add vehicle length with the gap
+        # gap = gap + self.vehicle_length
+        if gap <= 4.6:
+            gap = 0
         rel_speed = lead_speed - ego_speed  # dv
 
         # 2. FollowerStopper: compute commanded velocity

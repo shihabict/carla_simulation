@@ -9,9 +9,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 class SimulationLogger:
-    def __init__(self,controller_type):
+    def __init__(self,controller_type,num_vehicle):
         self.records = []
         self.controller_type = controller_type
+        self.num_vehicle = num_vehicle
 
     def log(self, sim_time, name, location, velocity, acceleration, gap=None, command_velocity=None):
         speed = np.linalg.norm([velocity.x, velocity.y, velocity.z])
@@ -28,7 +29,7 @@ class SimulationLogger:
         })
 
     def save(self):
-        filename = f'sim_data_{EXP_NAME}_{self.controller_type}.csv'
+        filename = f'sim_data_{EXP_NAME}_{self.controller_type}_nV_{self.num_vehicle}.csv'
         df = pd.DataFrame(self.records)
         os.makedirs('Reports', exist_ok=True)
         path = os.path.join('Reports', filename)
@@ -46,8 +47,8 @@ class SimulationLogger:
         plt.title('Vehicle Trajectories')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/trajectories_{EXP_NAME}_{self.controller_type}.png')
-        print(f"[Plotted] Trajectories saved to Reports/trajectories_{self.controller_type}.png")
+        plt.savefig(f'Reports/trajectories_{EXP_NAME}_{self.controller_type}_nV_{self.num_vehicle}.png')
+        print(f"[Plotted] Trajectories saved to Reports/trajectories_{self.controller_type}_nV_{self.num_vehicle}.png")
 
     def plot_speeds(self):
         df = pd.DataFrame(self.records)
@@ -59,8 +60,8 @@ class SimulationLogger:
         plt.title('Speed vs Time')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/speed_vs_time_{EXP_NAME}_{self.controller_type}.png')
-        print(f"[Plotted] Speed profile saved to Reports/speed_vs_time{EXP_NAME}_{self.controller_type}.png")
+        plt.savefig(f'Reports/speed_vs_time_{EXP_NAME}_{self.controller_type}_nV_{self.num_vehicle}.png')
+        print(f"[Plotted] Speed profile saved to Reports/speed_vs_time{EXP_NAME}_{self.controller_type}_nV_{self.num_vehicle}.png")
 
     def plot_gap_vs_time(self):
         df = pd.DataFrame(self.records)
@@ -74,7 +75,7 @@ class SimulationLogger:
         plt.title(f'Gap Between Followers and Their Leaders Over Time {self.controller_type}')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/gap_vs_time_gap_{EXP_NAME}_{self.controller_type}.png')
+        plt.savefig(f'Reports/gap_vs_time_gap_{EXP_NAME}_{self.controller_type}_nV_{self.num_vehicle}.png')
 
     def plot_acceleration(self):
         df = pd.DataFrame(self.records)
@@ -87,5 +88,5 @@ class SimulationLogger:
         plt.title('Acceleration vs Time')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/acc_vs_time_{EXP_NAME}_{self.controller_type}.png')
-        print(f"[Plotted] Acceleration profile saved to Reports/acc_vs_time{EXP_NAME}_{self.controller_type}.png")
+        plt.savefig(f'Reports/acc_vs_time_{EXP_NAME}_{self.controller_type}_nV_{self.num_vehicle}.png')
+        print(f"[Plotted] Acceleration profile saved to Reports/acc_vs_time{EXP_NAME}_{self.controller_type}_nV_{self.num_vehicle}.png")
