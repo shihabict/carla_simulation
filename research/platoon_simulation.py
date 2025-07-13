@@ -72,7 +72,7 @@ class CarlaSimulator:
         # Spawn Followers (8 meters apart behind the leader)
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
-            offset_distance = (i + 1) * 12.0
+            offset_distance = (i + 1) * 8.0
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
@@ -290,5 +290,5 @@ class CarlaSimulator:
 if __name__ == '__main__':
     controller_name = "FS"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=8)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=3)
     sim.run_asynchronously()
