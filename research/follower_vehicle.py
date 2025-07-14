@@ -8,18 +8,19 @@ from nominal_contoller import NominalController
 
 class FollowerVehicle:
     def __init__(self, vehicle_actor: carla.Vehicle, map_ref: carla.Map,
-                 controller, leader_vehicle: carla.Vehicle, waypoint_lookahead=2.0):
+                 controller, leader_vehicle: carla.Vehicle, reference_speed,waypoint_lookahead=2.0):
         self.vehicle = vehicle_actor
         self.map = map_ref
         self.controller = controller
         self.leader = leader_vehicle
         self.lookahead = waypoint_lookahead
-        self.vehicle_length = 4.5
-        self.nominal_controller = NominalController(dt=0.1)
+        self.vehicle_length = 4.6
+        self.reference_speed = reference_speed
+        self.nominal_controller = NominalController(dt=0.01, reference_speed=self.reference_speed)
 
     def get_speed(self):
         v = self.vehicle.get_velocity()
-        return np.linalg.norm([v.x, v.y])
+        return np.linalg.norm([v.x])
 
     def compute_gap_and_leader_speed(self):
         ego_loc = self.vehicle.get_location()
@@ -95,7 +96,7 @@ class FollowerVehicle:
         # 2. FollowerStopper: compute commanded velocity
         # reference_speed = 15.0  # fixed for now
         # print(f"")
-        commanded_speed = self.controller.compute_velocity_command(
+        commanded_speed, _ = self.controller.compute_velocity_command(
             r=reference_speed,
             dx=gap,
             dv=rel_speed,

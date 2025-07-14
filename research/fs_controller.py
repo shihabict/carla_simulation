@@ -45,7 +45,7 @@ class FollowerStopperController:
         else:
             u_cmd = r
 
-        return u_cmd
+        return u_cmd, (dx1,dx2,dx3)
 
 # if __name__ == '__main__':
 #     controller = FollowerStopperController()

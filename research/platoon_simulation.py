@@ -20,7 +20,7 @@ from utils import load_xodr
 
 
 class CarlaSimulator:
-    def __init__(self, csv_path, custom_map_path, controller_name, num_ice_followers=3):
+    def __init__(self, csv_path, custom_map_path, controller_name, reference_speed, num_ice_followers=3):
         self.client = carla.Client('localhost', 2000)
         self.client.set_timeout(10.0)
         self.world = self.load_custom_map(self.client, custom_map_path)
@@ -36,7 +36,8 @@ class CarlaSimulator:
         self.leader = None
         self.followers = []
         self.spectator = self.world.get_spectator()
-        self.logger = SimulationLogger(self.controller_type, self.num_ice_followers)
+        self.reference_speed = reference_speed
+        self.logger = SimulationLogger(self.controller_type, self.num_ice_followers, self.reference_speed)
 
     def load_custom_map(self,client, custom_map_path):
         xodr_content = load_xodr(custom_map_path)
@@ -85,10 +86,10 @@ class CarlaSimulator:
             # Attach controller
             if self.controller_type == "FS":
                 fs_controller = FollowerStopperController()
-                follower = FollowerVehicle(vehicle, self.map, fs_controller, previous_vehicle)
+                follower = FollowerVehicle(vehicle, self.map, fs_controller, previous_vehicle,self.reference_speed)
             else:
                 idm_controller = IDMController()
-                follower = FollowerVehicle(vehicle, self.map, idm_controller, previous_vehicle)
+                follower = FollowerVehicle(vehicle, self.map, idm_controller, previous_vehicle,self.reference_speed)
 
             self.followers.append(follower)
             previous_vehicle = vehicle
@@ -164,7 +165,8 @@ class CarlaSimulator:
                     #     print("------------------------------")
                     # follower_acceleration = follower.get_acceleration().x
                     self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
-                                    follower.vehicle.get_velocity(), follower.vehicle.get_acceleration().x, gap, command_velocity, reference_speed)
+                                    follower.vehicle.get_velocity(), follower.vehicle.get_acceleration().x,
+                                    gap, command_velocity, reference_speed)
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
@@ -289,6 +291,7 @@ class CarlaSimulator:
 
 if __name__ == '__main__':
     controller_name = "FS"
+    reference_speed = 30
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=3)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=4, reference_speed=reference_speed)
     sim.run_asynchronously()
