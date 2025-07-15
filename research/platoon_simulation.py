@@ -210,7 +210,7 @@ class CarlaSimulator:
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
-                cam_transform = last_follower.get_transform().transform(carla.Location(x=-8, z=10))
+                cam_transform = last_follower.get_transform().transform(carla.Location(x=-30, z=30))
                 self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
 
             # Sync CARLA to time step
