@@ -41,6 +41,8 @@ class FollowerVehicle:
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
 
+        rel_speed = lead_speed - ego_speed
+
         # 2. IDM acceleration
         acceleration = self.controller.compute_acceleration(ego_speed, lead_speed, gap)
 
@@ -81,7 +83,7 @@ class FollowerVehicle:
         transform.rotation = next_wp.transform.rotation
         self.vehicle.set_transform(transform)
 
-        return np.linalg.norm([velocity.x])
+        return np.linalg.norm([velocity.x]),rel_speed
 
     def update_fs(self):
         # 1. Get current speed and gap
@@ -125,5 +127,5 @@ class FollowerVehicle:
         transform.rotation = next_wp.transform.rotation
         self.vehicle.set_transform(transform)
 
-        return commanded_speed, reference_speed
+        return commanded_speed, reference_speed, rel_speed
 

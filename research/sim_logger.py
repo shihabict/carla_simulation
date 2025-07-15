@@ -14,7 +14,7 @@ class SimulationLogger:
         self.records = []
         self.controller_type = controller_type
         self.num_vehicle = num_vehicle
-        self.data_path = f"{BASE_DIR}/Reports/sim_data_g2a26cb25_fs_FS_nV_6.csv"
+        self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_nV_4_ref30.csv"
         self.reference_speed = reference_speed
         self.custom_colors = [
             '#1f77b4',  # blue
@@ -27,7 +27,7 @@ class SimulationLogger:
             '#bcbd22',  # yellow-green
         ]
 
-    def log(self, sim_time, name, location, velocity, acceleration, gap=None, command_velocity=None, reference_speed=None):
+    def log(self, sim_time, name, location, velocity, acceleration, gap=None, command_velocity=None, reference_speed=None,rel_speed=None):
         speed = np.linalg.norm([velocity.x, velocity.y, velocity.z])
         self.records.append({
             'time': sim_time,
@@ -39,7 +39,8 @@ class SimulationLogger:
             'acc': acceleration,
             'gap': gap,
             'command_velocity': command_velocity,
-            'reference_speed':reference_speed
+            'reference_velocity':reference_speed,
+            'rel_velocity': rel_speed
         })
 
     def save(self):
@@ -102,7 +103,7 @@ class SimulationLogger:
         plt.figure(figsize=(10, 6))
         for idx, (label, group) in enumerate(df.groupby('name')):
             color = self.custom_colors[idx % len(self.custom_colors)]
-            plt.plot(group['time'], group['reference_speed'], label=label, color=color, linewidth=1)
+            plt.plot(group['time'], group['reference_velocity'], label=label, color=color, linewidth=1)
         plt.xlabel('Time (s)')
         plt.ylabel('Ref Speed (m/s)')
         plt.title(f'Reference speed vs Time with reference speed {self.reference_speed}')
@@ -111,6 +112,28 @@ class SimulationLogger:
         plt.savefig(f'Reports/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
         print(
             f"[Plotted] Reference Velocity saved to Reports/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png")
+
+    def plot_relative_velocity(self):
+        if self.records:
+            df = pd.DataFrame(self.records)
+        else:
+            df = self.load_data(self.data_path)
+
+        df = df[df['name']!='leader']
+        plt.figure(figsize=(10, 6))
+        for idx, (label, group) in enumerate(df.groupby('name')):
+            color = self.custom_colors[idx % len(self.custom_colors)]
+            plt.plot(group['time'], group['rel_velocity'], label=label, color=color, linewidth=1)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Relative Velocity (m/s)')
+        plt.title(f'Relative Velocity vs Time with reference Velocity {self.reference_speed}')
+        plt.grid()
+        plt.legend()
+        plt.savefig(f'Reports/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
+        print(
+            f"[Plotted] Relative Velocity saved to Reports/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png")
+
+
 
     def plot_command_velocity(self):
         if self.records:
@@ -170,9 +193,10 @@ class SimulationLogger:
 if __name__ == '__main__':
     controller_type = "FS"
     num_vehicle = 6
-    sim_logger = SimulationLogger(controller_type,num_vehicle)
+    sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=30)
     sim_logger.plot_trajectories()
     sim_logger.plot_speeds()
     sim_logger.plot_reference_velocity()
     sim_logger.plot_command_velocity()
     sim_logger.plot_gap_vs_time()
+    sim_logger.plot_relative_velocity()

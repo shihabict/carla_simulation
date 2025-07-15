@@ -150,9 +150,9 @@ class CarlaSimulator:
                     label = f'follower_{j}'
                     # follower.leader.set_target_velocity(previous_leader_vel)
                     if self.controller_type == "FS":
-                        command_velocity, reference_speed = follower.update_fs()
+                        command_velocity, reference_speed, rel_speed = follower.update_fs()
                     else:
-                        command_velocity = follower.update_idm(delta_t)
+                        command_velocity, rel_speed = follower.update_idm(delta_t)
                         reference_speed = 0
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
                     # if gap < 5 :
@@ -166,7 +166,7 @@ class CarlaSimulator:
                     # follower_acceleration = follower.get_acceleration().x
                     self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
                                     follower.vehicle.get_velocity(), follower.vehicle.get_acceleration().x,
-                                    gap, command_velocity, reference_speed)
+                                    gap, command_velocity, reference_speed, rel_speed)
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
