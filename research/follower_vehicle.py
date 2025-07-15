@@ -98,7 +98,7 @@ class FollowerVehicle:
         # 2. FollowerStopper: compute commanded velocity
         # reference_speed = 15.0  # fixed for now
         # print(f"")
-        commanded_speed, _ = self.controller.compute_velocity_command(
+        commanded_speed, quadratic_regions = self.controller.compute_velocity_command(
             r=reference_speed,
             dx=gap,
             dv=rel_speed,
@@ -106,7 +106,27 @@ class FollowerVehicle:
         )
         # commanded_speed = round(commanded_speed,3)
 
-        # 3. Get direction from waypoint
+        # # 3. Get direction from waypoint
+        # current_loc = self.vehicle.get_location()
+        # current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
+        # next_wp_list = current_wp.next(self.lookahead)
+        #
+        # if not next_wp_list:
+        #     return False  # No more waypoints
+        #
+        # next_wp = next_wp_list[0]
+        # direction = (next_wp.transform.location - current_loc).make_unit_vector()
+        #
+        # # 4. Apply target velocity
+        # velocity = carla.Vector3D(direction.x * commanded_speed)
+        # self.vehicle.set_target_velocity(velocity)
+        # self.leader.set_target_angular_velocity(velocity)
+        #
+        # # 5. Apply yaw alignment
+        # transform = self.vehicle.get_transform()
+        # transform.rotation = next_wp.transform.rotation
+        # self.vehicle.set_transform(transform)
+        # 2. Get direction from waypoint
         current_loc = self.vehicle.get_location()
         current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
         next_wp_list = current_wp.next(self.lookahead)
@@ -115,17 +135,33 @@ class FollowerVehicle:
             return False  # No more waypoints
 
         next_wp = next_wp_list[0]
-        direction = (next_wp.transform.location - current_loc).make_unit_vector()
+        target_location = next_wp.transform.location
+        vec_to_wp = target_location - current_loc
+        direction = vec_to_wp.make_unit_vector()
 
-        # 4. Apply target velocity
-        velocity = carla.Vector3D(direction.x * commanded_speed)
-        self.vehicle.set_target_velocity(velocity)
-        self.leader.set_target_angular_velocity(velocity)
+        # 3. Calculate yaw steering angle
+        current_transform = self.vehicle.get_transform()
+        current_yaw = current_transform.rotation.yaw
+        angle_to_wp = np.degrees(np.arctan2(vec_to_wp.y, vec_to_wp.x))
+        steering_error = angle_to_wp - current_yaw
+        steering_error = (steering_error + 180) % 360 - 180  # Wrap to [-180, 180]
+        steer = np.clip(steering_error / 45.0, -1.0, 1.0)
 
-        # 5. Apply yaw alignment
-        transform = self.vehicle.get_transform()
-        transform.rotation = next_wp.transform.rotation
-        self.vehicle.set_transform(transform)
+        # 4. Compute throttle and brake
+        current_speed = self.get_speed()
+        speed_error = commanded_speed - current_speed
+        throttle = np.clip(speed_error * 0.5, 0.0, 1.0)
+        brake = 0.0
+        if speed_error < -0.5:
+            brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
+            throttle = 0.0
 
-        return commanded_speed, reference_speed, rel_speed
+        # 5. Apply control
+        control = carla.VehicleControl()
+        control.throttle = throttle
+        control.brake = brake
+        control.steer = steer
+        self.vehicle.apply_control(control)
+
+        return commanded_speed, reference_speed, rel_speed, quadratic_regions
 

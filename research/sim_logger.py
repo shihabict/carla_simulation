@@ -27,7 +27,7 @@ class SimulationLogger:
             '#bcbd22',  # yellow-green
         ]
 
-    def log(self, sim_time, name, location, velocity, acceleration, gap=None, command_velocity=None, reference_speed=None,rel_speed=None):
+    def log(self, sim_time, name, location, velocity, acceleration, gap=None, command_velocity=None, reference_speed=None,rel_speed=None, quadratic_region=(0,0,0)):
         speed = np.linalg.norm([velocity.x, velocity.y, velocity.z])
         self.records.append({
             'time': sim_time,
@@ -40,7 +40,8 @@ class SimulationLogger:
             'gap': gap,
             'command_velocity': command_velocity,
             'reference_velocity':reference_speed,
-            'rel_velocity': rel_speed
+            'rel_velocity': rel_speed,
+            'quadratic_region': quadratic_region
         })
 
     def save(self):

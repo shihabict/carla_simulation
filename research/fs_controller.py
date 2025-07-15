@@ -34,6 +34,10 @@ class FollowerStopperController:
         # dx2 = dx_mid + (dv ** 2) / (2 * self.decel[1])
         dx3 = self.dx_activate + (1/(2*self.decel[2])) * dv**2
         # dx3 = self.dx_activate + (dv ** 2) / (2 * self.decel[2])
+        # print(f"dx1: {dx1}")
+        # print(f"dx2: {dx2}")
+        # print(f"dx3: {dx3}")
+        # print(f'----------------------------------------------------------------')
 
         # Piecewise logic
         if dx < dx1:

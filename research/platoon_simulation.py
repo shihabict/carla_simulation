@@ -121,27 +121,66 @@ class CarlaSimulator:
                     # print(f"Sim Time : {sim_time}")
                     # print("------------------------------")
 
-                # --- Leader control ---
+                ## --- Leader control ---
+                # direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)
+                # if direction_vector is None:
+                #     print("Leader has no more waypoints.")
+                #     break
+                #
+                # velocity = carla.Vector3D(
+                #     direction_vector.x * target_speed
+                # )
+                #
+                # self.leader.set_target_velocity(velocity)
+                # # self.leader.set_target_angular_velocity(velocity)
+                #
+                # transform = self.leader.get_transform()
+                # transform.rotation = next_wp.transform.rotation
+                # self.leader.set_transform(transform)
+
+                # --- Get current state and direction ---
                 direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)
                 if direction_vector is None:
                     print("Leader has no more waypoints.")
                     break
 
-                velocity = carla.Vector3D(
-                    direction_vector.x * target_speed
-                )
+                current_transform = self.leader.get_transform()
+                current_location = current_transform.location
+                current_yaw = current_transform.rotation.yaw  # In degrees
 
-                self.leader.set_target_velocity(velocity)
-                # self.leader.set_target_angular_velocity(velocity)
+                # --- Compute target yaw ---
+                target_location = next_wp.transform.location
+                vec_to_wp = target_location - current_location
+                angle_to_wp = np.degrees(np.arctan2(vec_to_wp.y, vec_to_wp.x))
 
-                transform = self.leader.get_transform()
-                transform.rotation = next_wp.transform.rotation
-                self.leader.set_transform(transform)
+                # --- Compute steering ---
+                steering_error = angle_to_wp - current_yaw
+                steering_error = (steering_error + 180) % 360 - 180  # Wrap to [-180, 180]
+                steer = np.clip(steering_error / 45.0, -1.0, 1.0)  # Normalize to CARLA range
+
+                # --- Compute throttle ---
+                current_speed = self.leader.get_velocity()
+                current_speed_mps = np.linalg.norm([current_speed.x, current_speed.y, current_speed.z])
+                speed_error = target_speed - current_speed_mps
+
+                throttle = np.clip(speed_error * 0.5, 0.0, 1.0)  # Proportional control
+                brake = 0.0
+                if speed_error < -0.5:
+                    brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
+                    throttle = 0.0
+
+                # --- Apply control ---
+                control = carla.VehicleControl()
+                control.throttle = throttle
+                control.brake = brake
+                control.steer = steer
+                self.leader.apply_control(control)
+
 
                 self.logger.log(sim_time, 'leader', self.leader.get_location(), self.leader.get_velocity(), round(self.leader.get_acceleration().x,3))
 
                 # --- Followers control ---
-                previous_leader_vel = velocity
+                # previous_leader_vel = velocity
                 # if i > 103:
                 for j, follower in enumerate(self.followers):
                     # if target_speed == 0:
@@ -150,10 +189,11 @@ class CarlaSimulator:
                     label = f'follower_{j}'
                     # follower.leader.set_target_velocity(previous_leader_vel)
                     if self.controller_type == "FS":
-                        command_velocity, reference_speed, rel_speed = follower.update_fs()
+                        command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
                     else:
                         command_velocity, rel_speed = follower.update_idm(delta_t)
                         reference_speed = 0
+                        quadratic_region = (0,0,0)
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
                     # if gap < 5 :
                     #     print(f"Follower {j} and Leader {j-1} speed {leader_speed} : GAP : {gap} and command velocity {command_velocity}")
@@ -166,7 +206,7 @@ class CarlaSimulator:
                     # follower_acceleration = follower.get_acceleration().x
                     self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
                                     follower.vehicle.get_velocity(), follower.vehicle.get_acceleration().x,
-                                    gap, command_velocity, reference_speed, rel_speed)
+                                    gap, command_velocity, reference_speed, rel_speed, quadratic_region)
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
@@ -286,6 +326,7 @@ class CarlaSimulator:
         self.logger.plot_speeds()
         self.logger.plot_reference_velocity()
         self.logger.plot_command_velocity()
+        self.logger.plot_relative_velocity()
         self.logger.plot_gap_vs_time()
         print("Vehicles destroyed. Simulation ended.")
 
