@@ -10,12 +10,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 class SimulationLogger:
-    def __init__(self,controller_type, num_vehicle, reference_speed):
+    def __init__(self,controller_type, num_vehicle, reference_speed, sampling_frequency):
         self.records = []
         self.controller_type = controller_type
         self.num_vehicle = num_vehicle
         self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_nV_4_ref30.csv"
         self.reference_speed = reference_speed
+        self.sampling_frequency = sampling_frequency
         self.custom_colors = [
             '#1f77b4',  # blue
             '#ff7f0e',  # orange
@@ -45,7 +46,7 @@ class SimulationLogger:
         })
 
     def save(self):
-        filename = f'sim_data_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.csv'
+        filename = f'sim_data_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.csv'
         df = pd.DataFrame(self.records)
         os.makedirs('Reports', exist_ok=True)
         path = os.path.join('Reports', filename)
@@ -69,8 +70,8 @@ class SimulationLogger:
         plt.title(f'Vehicle Trajectories with reference speed {self.reference_speed}')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/trajectories_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
-        print(f"[Plotted] Trajectories saved to Reports/trajectories_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png")
+        plt.savefig(f'Reports/trajectories_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png')
+        print(f"[Plotted] Trajectories saved to Reports/trajectories_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png")
 
     def plot_speeds(self):
         if self.records:
@@ -91,8 +92,8 @@ class SimulationLogger:
         plt.title(f'Speed vs Time with reference speed {self.reference_speed}')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/speed_vs_time__{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
-        print(f"[Plotted] Speed profile saved to Reports/speed_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png")
+        plt.savefig(f'Reports/speed_vs_time__{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png')
+        print(f"[Plotted] Speed profile saved to Reports/speed_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png")
 
     def plot_reference_velocity(self):
         if self.records:
@@ -110,9 +111,9 @@ class SimulationLogger:
         plt.title(f'Reference speed vs Time with reference speed {self.reference_speed}')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
+        plt.savefig(f'Reports/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png')
         print(
-            f"[Plotted] Reference Velocity saved to Reports/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png")
+            f"[Plotted] Reference Velocity saved to Reports/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png")
 
     def plot_relative_velocity(self):
         if self.records:
@@ -130,9 +131,9 @@ class SimulationLogger:
         plt.title(f'Relative Velocity vs Time with reference Velocity {self.reference_speed}')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
+        plt.savefig(f'Reports/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png')
         print(
-            f"[Plotted] Relative Velocity saved to Reports/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png")
+            f"[Plotted] Relative Velocity saved to Reports/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png")
 
 
 
@@ -150,9 +151,9 @@ class SimulationLogger:
         plt.title(f'Command Speed vs Time with reference speed {self.reference_speed}')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
+        plt.savefig(f'Reports/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png')
         print(
-            f"[Plotted] Command Velocity saved to Reports/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png")
+            f"[Plotted] Command Velocity saved to Reports/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png")
 
     def plot_gap_vs_time(self):
         if self.records:
@@ -170,7 +171,7 @@ class SimulationLogger:
         plt.title(f'Gap Between Followers and Their Leaders Over Time {self.controller_type} with reference speed {self.reference_speed}')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/gap_vs_time_gap_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
+        plt.savefig(f'Reports/gap_vs_time_gap_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png')
 
     def plot_acceleration(self):
         if self.records:
@@ -187,8 +188,8 @@ class SimulationLogger:
         plt.title(f'Acceleration vs Time with reference speed {self.reference_speed}')
         plt.grid()
         plt.legend()
-        plt.savefig(f'Reports/acc_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png')
-        print(f"[Plotted] Acceleration profile saved to Reports/acc_vs_timeE_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}.png")
+        plt.savefig(f'Reports/acc_vs_time_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png')
+        print(f"[Plotted] Acceleration profile saved to Reports/acc_vs_timeE_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png")
 
 
 if __name__ == '__main__':

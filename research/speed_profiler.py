@@ -34,10 +34,12 @@ from settings import ROOT_DIR
 # import numpy as np
 
 class SpeedProfileController:
-    def __init__(self, csv_path: str, target_rate: int = 100):
+    def __init__(self, csv_path: str, sampling_frequency: float, target_rate: int = 100):
         self.target_rate = target_rate
         self.df = pd.read_csv(csv_path)
+        self.sampling_frequency = sampling_frequency
         self._prepare_profile()
+
 
     def _prepare_profile(self):
         self.df['speed_mps'] = self.df['Message'] * (1000 / 3600)  # Convert km/h to m/s
@@ -62,7 +64,8 @@ class SpeedProfileController:
         # self.df = self.df.iloc[::step].reset_index(drop=True)
         self.df = self.df.round(3)
         self.df = self.df[self.df['time_diff']!=0].reset_index(drop=True)
-        self.downsample_to_10hz()
+        # self.downsample_to_10hz()
+        self.upsample_to_nhz(self.sampling_frequency)
         print(0)
 
 
@@ -90,8 +93,33 @@ class SpeedProfileController:
         downsampled = downsampled.drop(columns='second').reset_index(drop=True)
         self.df = downsampled
 
+    def upsample_to_nhz(self,target_hz=0.01):
+        # Ensure time is sorted and normalized
+        self.df = self.df.sort_values(by='time_rel').reset_index(drop=True)
+
+        # Create new time grid at 100 Hz
+        new_times = np.arange(self.df['time_rel'].iloc[0],
+                              self.df['time_rel'].iloc[-1],
+                              target_hz)  # 0.01s = 100Hz
+
+        # Initialize new DataFrame
+        upsampled_df = pd.DataFrame({'time_rel': new_times})
+
+        # Interpolate all numerical columns
+        for col in self.df.columns:
+            if col == 'time_rel':
+                continue
+            if np.issubdtype(self.df[col].dtype, np.number):
+                upsampled_df[col] = np.interp(
+                    new_times, self.df['time_rel'], self.df[col])
+
+        self.df = upsampled_df.round(3)  # Optional: round to 3 decimal places
+
 
 if __name__ == '__main__':
     csv_path = f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv'
     speed_profiler = SpeedProfileController(csv_path)
+    # speed_profiler.save_processed_data()
+    speed_profiler.upsample_to_nhz(0.01)
     speed_profiler.save_processed_data()
+    print(0)

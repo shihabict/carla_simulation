@@ -20,7 +20,7 @@ from utils import load_xodr
 
 
 class CarlaSimulator:
-    def __init__(self, csv_path, custom_map_path, controller_name, reference_speed, num_ice_followers=3):
+    def __init__(self, csv_path, custom_map_path, controller_name, reference_speed, sampling_frequency, num_ice_followers=3):
         self.client = carla.Client('localhost', 2000)
         self.client.set_timeout(10.0)
         self.world = self.load_custom_map(self.client, custom_map_path)
@@ -30,14 +30,16 @@ class CarlaSimulator:
         self.controller_type = controller_name
 
         self.csv_path = csv_path
-        self.speed_controller = SpeedProfileController(self.csv_path)
+        self.sampling_frequency = sampling_frequency
+        self.speed_controller = SpeedProfileController(self.csv_path, self.sampling_frequency)
         self.num_ice_followers = num_ice_followers
 
         self.leader = None
         self.followers = []
         self.spectator = self.world.get_spectator()
         self.reference_speed = reference_speed
-        self.logger = SimulationLogger(self.controller_type, self.num_ice_followers, self.reference_speed)
+
+        self.logger = SimulationLogger(self.controller_type, self.num_ice_followers, self.reference_speed, self.sampling_frequency)
 
     def load_custom_map(self,client, custom_map_path):
         xodr_content = load_xodr(custom_map_path)
@@ -65,6 +67,8 @@ class CarlaSimulator:
         # Spawn Leader
         leader_bp = 'vehicle.lincoln.mkz_2020'
         base_spawn.location.x = base_spawn.location.x - 500
+        base_spawn.location.y = 0.00
+        # base_spawn.location.y = 4.500
         self.leader = self.spawn_vehicle(leader_bp, base_spawn)
         if not self.leader:
             raise RuntimeError("Failed to spawn leader vehicle.")
@@ -74,6 +78,7 @@ class CarlaSimulator:
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
             offset_distance = (i + 1) * 8.0
+            base_spawn.location.y = 0.00
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
@@ -109,34 +114,15 @@ class CarlaSimulator:
 
         speed_df = self.speed_controller.df  # Convenience alias
         try:
-            for i in range(1, len(speed_df)):
+            # for i in range(1, len(speed_df)):
             # for i in range(1, 1000):
-            # for i in range(1, 7000):
+            for i in range(1, 50000):
                 # Step-specific timing and speed
                 sim_time = speed_df.loc[i, 'time_rel']
                 # delta_t = speed_df.loc[i, 'time_diff']
-                delta_t = 0.1
+                delta_t = 0.01
                 target_speed = speed_df.loc[i, 'speed_mps']
-                # if target_speed == 0:
-                    # print(f"Sim Time : {sim_time}")
-                    # print("------------------------------")
 
-                ## --- Leader control ---
-                # direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)
-                # if direction_vector is None:
-                #     print("Leader has no more waypoints.")
-                #     break
-                #
-                # velocity = carla.Vector3D(
-                #     direction_vector.x * target_speed
-                # )
-                #
-                # self.leader.set_target_velocity(velocity)
-                # # self.leader.set_target_angular_velocity(velocity)
-                #
-                # transform = self.leader.get_transform()
-                # transform.rotation = next_wp.transform.rotation
-                # self.leader.set_transform(transform)
 
                 # --- Get current state and direction ---
                 direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)
@@ -154,26 +140,28 @@ class CarlaSimulator:
                 angle_to_wp = np.degrees(np.arctan2(vec_to_wp.y, vec_to_wp.x))
 
                 # --- Compute steering ---
-                steering_error = angle_to_wp - current_yaw
-                steering_error = (steering_error + 180) % 360 - 180  # Wrap to [-180, 180]
-                steer = np.clip(steering_error / 45.0, -1.0, 1.0)  # Normalize to CARLA range
+                # steering_error = angle_to_wp - current_yaw
+                # steering_error = (steering_error + 180) % 360 - 180  # Wrap to [-180, 180]
+                # steer = np.clip(steering_error / 45.0, -1.0, 1.0)  # Normalize to CARLA range
 
                 # --- Compute throttle ---
                 current_speed = self.leader.get_velocity()
-                current_speed_mps = np.linalg.norm([current_speed.x, current_speed.y, current_speed.z])
+                current_speed_mps = np.linalg.norm([current_speed.x])
                 speed_error = target_speed - current_speed_mps
 
-                throttle = np.clip(speed_error * 0.5, 0.0, 1.0)  # Proportional control
+                throttle = np.clip(speed_error * 0.3, 0.0, 1.0)  # Proportional control
                 brake = 0.0
                 if speed_error < -0.5:
-                    brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
+                    brake = np.clip(-speed_error * 0.3, 0.0, 1.0)
                     throttle = 0.0
 
                 # --- Apply control ---
                 control = carla.VehicleControl()
                 control.throttle = throttle
                 control.brake = brake
-                control.steer = steer
+                control.steer = 0.0
+                if control.steer>0.0:
+                    print(f"Leader Steering : {control.steer}")
                 self.leader.apply_control(control)
 
 
@@ -195,25 +183,20 @@ class CarlaSimulator:
                         reference_speed = 0
                         quadratic_region = (0,0,0)
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
-                    # if gap < 5 :
-                    #     print(f"Follower {j} and Leader {j-1} speed {leader_speed} : GAP : {gap} and command velocity {command_velocity}")
-                    previous_leader_vel = follower.vehicle.get_velocity()
-                    # print(f"Follower {follower.vehicle.id} and Leader {follower.leader.id} speed {leader_speed} : GAP : {gap} and command velocity {command_velocity}")
-                    # if target_speed == 0:
-                    #     print(f"Sim Time : {sim_time} leader speed {target_speed}")
-                    #     print(f"{label}:{follower.vehicle.id} \nspeed {follower.vehicle.get_velocity()} \ngap {gap} \nlocation {follower.vehicle.get_location()} \n\nleader ID {follower.leader.id} \n speed {follower.leader.get_velocity()} \nlocation {follower.leader.get_location()}")
-                    #     print("------------------------------")
-                    # follower_acceleration = follower.get_acceleration().x
+
+                    print(f"{label} Speed {follower.get_speed()}")
+                    print('---------------------------------------------------------------------------')
+
                     self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
                                     follower.vehicle.get_velocity(), follower.vehicle.get_acceleration().x,
                                     gap, command_velocity, reference_speed, rel_speed, quadratic_region)
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
-                cam_transform = last_follower.get_transform().transform(carla.Location(x=-30, z=20))
+                cam_transform = last_follower.get_transform().transform(carla.Location(x=-20, z=10))
                 self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
 
-            # Sync CARLA to time step
+                # Sync CARLA to time step
                 self.world.tick()
                 # time.sleep(0.01)
 
@@ -257,12 +240,9 @@ class CarlaSimulator:
                                 round(self.leader.get_acceleration().x, 3))
 
                 # --- Followers control ---
-                previous_leader_vel = velocity
-                # if i > 103:
+
                 for j, follower in enumerate(self.followers):
-                    # if target_speed == 0:
-                    #     print(self.leader.get_velocity())
-                    #     follower.vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
+
                     label = f'follower_{j}'
                     # follower.leader.set_target_velocity(previous_leader_vel)
                     if self.controller_type == "FS":
@@ -271,15 +251,7 @@ class CarlaSimulator:
                         command_velocity = follower.update_idm(delta_t)
                         reference_speed = 0
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
-                    # if gap < 5 :
-                    #     print(f"Follower {j} and Leader {j-1} speed {leader_speed} : GAP : {gap} and command velocity {command_velocity}")
-                    previous_leader_vel = follower.vehicle.get_velocity()
-                    # print(f"Follower {follower.vehicle.id} and Leader {follower.leader.id} speed {leader_speed} : GAP : {gap} and command velocity {command_velocity}")
-                    # if target_speed == 0:
-                    #     print(f"Sim Time : {sim_time} leader speed {target_speed}")
-                    #     print(f"{label}:{follower.vehicle.id} \nspeed {follower.vehicle.get_velocity()} \ngap {gap} \nlocation {follower.vehicle.get_location()} \n\nleader ID {follower.leader.id} \n speed {follower.leader.get_velocity()} \nlocation {follower.leader.get_location()}")
-                    #     print("------------------------------")
-                    # follower_acceleration = follower.get_acceleration().x
+
                     self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
                                     follower.vehicle.get_velocity(), follower.vehicle.get_acceleration().x, gap,
                                     command_velocity, reference_speed)
@@ -300,7 +272,7 @@ class CarlaSimulator:
         finally:
             self.cleanup()
 
-    def get_direction_to_next_wp(self, vehicle, lookahead=2.0):
+    def get_direction_to_next_wp(self, vehicle, lookahead=1.0):
         current_loc = vehicle.get_location()
         current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
         next_wp_list = current_wp.next(lookahead)
@@ -332,7 +304,7 @@ class CarlaSimulator:
 
 if __name__ == '__main__':
     controller_name = "FS"
-    reference_speed = 30
+    reference_speed = 25
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=4, reference_speed=reference_speed)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=2, reference_speed=reference_speed, sampling_frequency=0.1)
     sim.run_asynchronously()
