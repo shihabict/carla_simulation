@@ -100,7 +100,7 @@ class CarlaSimulator:
             self.followers.append(follower)
             previous_vehicle = vehicle
 
-    def run_asynchronously(self,simulation_duration=5):
+    def run_asynchronously(self,simulation_duration):
         self.setup_simulation()
         self.spawn_leader_and_followers()
         print(f"{self.leader.id} {self.leader.get_location()}")
@@ -253,9 +253,10 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FS"
+    controller_name = "IDM+FS"
     reference_speed = 25
     switch_time = 200.0
+    controller_type = "IDM+FS"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=2, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)
-    sim.run_asynchronously(simulation_duration=5)
+    sim.run_asynchronously(simulation_duration=1000)
