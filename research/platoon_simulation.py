@@ -135,8 +135,7 @@ class CarlaSimulator:
             # Attach both controllers
             idm_controller = IDMController()
             fs_controller = FollowerStopperController()
-            follower = FollowerVehicle(vehicle, self.map, idm_controller, fs_controller, previous_vehicle,
-                                       self.speed_controller.df['speed_mps'].max())
+            follower = FollowerVehicle(vehicle, self.map, idm_controller, fs_controller, previous_vehicle, self.reference_speed)
 
             self.followers.append(follower)
             previous_vehicle = vehicle

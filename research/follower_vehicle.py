@@ -151,7 +151,7 @@ from fs_controller import FollowerStopperController
 
 class FollowerVehicle:
     def __init__(self, vehicle_actor: carla.Vehicle, map_ref: carla.Map,
-                 leader_vehicle: carla.Vehicle, reference_speed, waypoint_lookahead=2.0):
+                 leader_vehicle: carla.Vehicle, reference_speed, waypoint_lookahead=1.0):
         self.vehicle = vehicle_actor
         self.map = map_ref
         self.leader = leader_vehicle
