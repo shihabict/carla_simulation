@@ -10,13 +10,14 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 class SimulationLogger:
-    def __init__(self,controller_type, num_vehicle, reference_speed, sampling_frequency):
+    def __init__(self,controller_type, num_vehicle, reference_speed, sampling_frequency, switch_time):
         self.records = []
         self.controller_type = controller_type
         self.num_vehicle = num_vehicle
         self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_nV_4_ref30.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
+        self.switch_time = switch_time
         self.custom_colors = [
             '#1f77b4',  # blue
             '#ff7f0e',  # orange
@@ -67,7 +68,10 @@ class SimulationLogger:
             plt.plot(group['x'], group['y'], label=label, linewidth=1)
         plt.xlabel('X (m)')
         plt.ylabel('Y (m)')
-        plt.title(f'Vehicle Trajectories with reference speed {self.reference_speed}')
+        if self.switch_time:
+            plt.title(f'Vehicle Trajectories with reference speed {self.reference_speed} and IDM({self.switch_time})')
+        else:
+            plt.title(f'Vehicle Trajectories with reference speed {self.reference_speed}')
         plt.grid()
         plt.legend()
         plt.savefig(f'Reports/trajectories_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.png')

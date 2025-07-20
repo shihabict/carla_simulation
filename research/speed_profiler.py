@@ -118,8 +118,8 @@ class SpeedProfileController:
 
 if __name__ == '__main__':
     csv_path = f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv'
-    speed_profiler = SpeedProfileController(csv_path)
+    speed_profiler = SpeedProfileController(csv_path,sampling_frequency=0.02)
     # speed_profiler.save_processed_data()
-    speed_profiler.upsample_to_nhz(0.01)
+    # speed_profiler.upsample_to_nhz(0.01)
     speed_profiler.save_processed_data()
     print(0)
