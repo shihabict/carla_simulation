@@ -61,15 +61,58 @@ class CarlaSimulator:
         vehicle = self.world.try_spawn_actor(bp, spawn_transform)
         return vehicle
 
+    # def spawn_leader_and_followers(self):
+    #     spawn_points = self.map.get_spawn_points()
+    #     base_spawn = random.choice(spawn_points)
+    #
+    #     # Spawn Leader
+    #     leader_bp = 'vehicle.lincoln.mkz_2020'
+    #     base_spawn.location.x = base_spawn.location.x - 500
+    #     base_spawn.location.y = 0.00
+    #     # base_spawn.location.y = 4.500
+    #     self.leader = self.spawn_vehicle(leader_bp, base_spawn)
+    #     if not self.leader:
+    #         raise RuntimeError("Failed to spawn leader vehicle.")
+    #     print("[Leader Spawned]")
+    #
+    #     # Spawn Followers (8 meters apart behind the leader)
+    #     previous_vehicle = self.leader
+    #     for i in range(self.num_ice_followers + 1):  # First AV + n ICE
+    #         offset_distance = (i + 1) * 8.0
+    #         base_spawn.location.y = 0.00
+    #         offset_location = base_spawn.location + carla.Location(x=offset_distance)
+    #         follower_transform = carla.Transform(offset_location, base_spawn.rotation)
+    #
+    #         follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.tesla.model3'
+    #         vehicle = self.spawn_vehicle(follower_bp, follower_transform)
+    #         if not vehicle:
+    #             raise RuntimeError(f"Failed to spawn follower {i}.")
+    #         print(f"[Follower {i} Spawned]")
+    #
+    #         # Attach controller
+    #         if self.controller_type == "FS" or self.controller_type == "IDM+FS":
+    #             fs_controller = FollowerStopperController()
+    #             follower = FollowerVehicle(vehicle, self.map, fs_controller, previous_vehicle,self.reference_speed)
+    #         else:
+    #             idm_controller = IDMController()
+    #             follower = FollowerVehicle(vehicle, self.map, idm_controller, previous_vehicle,self.reference_speed)
+    #
+    #         self.followers.append(follower)
+    #         previous_vehicle = vehicle
+
+    def spawn_vehicle(self, blueprint_name, spawn_transform):
+        bp = self.bp_lib.find(blueprint_name)
+        vehicle = self.world.try_spawn_actor(bp, spawn_transform)
+        return vehicle
+
     def spawn_leader_and_followers(self):
         spawn_points = self.map.get_spawn_points()
         base_spawn = random.choice(spawn_points)
 
         # Spawn Leader
         leader_bp = 'vehicle.lincoln.mkz_2020'
-        base_spawn.location.x = base_spawn.location.x - 500
+        base_spawn.location.x -= 500
         base_spawn.location.y = 0.00
-        # base_spawn.location.y = 4.500
         self.leader = self.spawn_vehicle(leader_bp, base_spawn)
         if not self.leader:
             raise RuntimeError("Failed to spawn leader vehicle.")
@@ -89,16 +132,15 @@ class CarlaSimulator:
                 raise RuntimeError(f"Failed to spawn follower {i}.")
             print(f"[Follower {i} Spawned]")
 
-            # Attach controller
-            if self.controller_type == "FS":
-                fs_controller = FollowerStopperController()
-                follower = FollowerVehicle(vehicle, self.map, fs_controller, previous_vehicle,self.reference_speed)
-            else:
-                idm_controller = IDMController()
-                follower = FollowerVehicle(vehicle, self.map, idm_controller, previous_vehicle,self.reference_speed)
+            # Attach both controllers
+            idm_controller = IDMController()
+            fs_controller = FollowerStopperController()
+            follower = FollowerVehicle(vehicle, self.map, idm_controller, fs_controller, previous_vehicle,
+                                       self.speed_controller.df['speed_mps'].max())
 
             self.followers.append(follower)
             previous_vehicle = vehicle
+
 
     def run_asynchronously(self,simulation_duration):
         self.setup_simulation()
