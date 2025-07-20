@@ -193,15 +193,17 @@ class CarlaSimulator:
                     if not self.switch_time:
                         command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
                     elif self.switch_time is not None and sim_time >= self.switch_time:
+                        print(f"FS")
                         command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
                     else:
+                        print(f"IDM")
                         command_velocity, rel_speed = follower.update_idm(delta_t)
                         reference_speed = 0
                         quadratic_region = (0,0,0)
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
 
-                    print(f"{label} Speed {follower.get_speed()}")
-                    print('---------------------------------------------------------------------------')
+                    # print(f"{label} Speed {follower.get_speed()}")
+                    # print('---------------------------------------------------------------------------')
 
                     self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
                                     follower.vehicle.get_velocity(), follower.vehicle.get_acceleration().x,
