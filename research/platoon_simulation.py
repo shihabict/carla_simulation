@@ -121,7 +121,7 @@ class CarlaSimulator:
         # Spawn Followers (8 meters apart behind the leader)
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
-            offset_distance = (i + 1) * 8.0
+            offset_distance = (i + 1) * 6.0
             base_spawn.location.y = 0.00
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
@@ -141,11 +141,11 @@ class CarlaSimulator:
             previous_vehicle = vehicle
 
 
-    def run_asynchronously(self,simulation_duration):
+    def run_asynchronously(self,simulation_start_time,simulation_end_time):
         self.setup_simulation()
         self.spawn_leader_and_followers()
         print(f"{self.leader.id} {self.leader.get_location()}")
-        self.leader.show_debug_telemetry(enabled=True)
+        # self.leader.show_debug_telemetry(enabled=True)
         # for j, follower in enumerate(self.followers):
         #     print(f"follower_ID {follower.vehicle.id} Location : {follower.vehicle.get_location()}")
         #     print(f"Leader Id {follower.leader.id} Location : {follower.leader.get_location()}")
@@ -155,17 +155,18 @@ class CarlaSimulator:
         print("Starting leader-follower simulation...")
 
         speed_df = self.speed_controller.df  # Convenience alias
-        max_steps = int(simulation_duration/self.sampling_frequency)
+        min_steps = int(simulation_start_time/self.sampling_frequency)
+        max_steps = int(simulation_end_time/self.sampling_frequency)
         print(f"Max Steps : {max_steps}")
         try:
             # for i in range(1, len(speed_df)):
             # for i in range(1, 1000):
-            for i in range(1, max_steps):
+            for i in range(min_steps, max_steps):
                 # Step-specific timing and speed
                 sim_time = speed_df.loc[i, 'time_rel']
                 sim_time = i*self.sampling_frequency
                 # delta_t = speed_df.loc[i, 'time_diff']
-                delta_t = 0.02
+                delta_t = 0.1
                 target_speed = speed_df.loc[i, 'speed_mps']
 
 
@@ -233,14 +234,16 @@ class CarlaSimulator:
 
                     if not self.switch_time:
                         command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
-                    elif self.switch_time is not None and sim_time >= self.switch_time:
-                        print(f"FS")
+                        print(f"{label} - FS - {command_velocity} - {rel_speed}")
+                    elif self.switch_time is not None and sim_time >= simulation_start_time+self.switch_time:
+                        # print(f"FS")
                         command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
+                        print(f"{label} - FS - {command_velocity} - {rel_speed}")
                     else:
-                        print(f"IDM")
                         command_velocity, rel_speed = follower.update_idm(delta_t)
                         reference_speed = 0
                         quadratic_region = (0,0,0)
+                        print(f"{label} - IDM - {command_velocity} - {rel_speed}")
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
 
                     # print(f"{label} Speed {follower.get_speed()}")
@@ -252,7 +255,7 @@ class CarlaSimulator:
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
-                cam_transform = last_follower.get_transform().transform(carla.Location(x=-20, z=10))
+                cam_transform = last_follower.get_transform().transform(carla.Location(x=-15, z=10))
                 self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
 
                 # Sync CARLA to time step
@@ -296,10 +299,12 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "IDM+FS"
+    controller_name = "FS"
     reference_speed = 25
-    switch_time = 200.0
-    controller_type = "IDM+FS"
+    switch_time = None
+    simulation_start_time = 200.0
+    simulation_end_time = 1000.0
+    controller_type = "FS"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=2, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)
-    sim.run_asynchronously(simulation_duration=1000)
+    sim.run_asynchronously(simulation_start_time=simulation_start_time,simulation_end_time=simulation_end_time)

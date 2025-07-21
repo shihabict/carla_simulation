@@ -193,16 +193,28 @@ class FollowerVehicle:
             return False
 
         next_wp = next_wp_list[0]
-        direction = (next_wp.transform.location - current_loc).make_unit_vector()
-        velocity = carla.Vector3D(direction.x * target_speed, direction.y * target_speed, direction.z * target_speed)
-        self.vehicle.set_target_velocity(velocity)
-        self.leader.set_target_angular_velocity(velocity)
+        target_location = next_wp.transform.location
+        target_location.y = 0.0
+        target_location.z = 0.0
+        vec_to_wp = target_location - current_loc
 
-        transform = self.vehicle.get_transform()
-        transform.rotation = next_wp.transform.rotation
-        self.vehicle.set_transform(transform)
+        current_speed = self.get_speed()
+        speed_error = target_speed - current_speed
+        throttle = np.clip(speed_error * 0.5, 0.0, 1.0)
+        brake = 0.0
+        if speed_error < -0.5:
+            brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
+            throttle = 0.0
 
-        return np.linalg.norm([velocity.x]), rel_speed
+        control = carla.VehicleControl()
+        control.throttle = throttle
+        control.brake = brake
+        control.steer = 0.0
+        if control.steer > 0.0:
+            print(f"Follower Steering : {control.steer}")
+        self.vehicle.apply_control(control)
+
+        return target_speed, rel_speed
 
     def update_fs(self):
         ego_speed = self.get_speed()

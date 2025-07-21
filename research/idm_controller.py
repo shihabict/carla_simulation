@@ -1,8 +1,8 @@
 import numpy as np
 
 class IDMController:
-    def __init__(self, desired_speed=25.0, max_accel=2.6, comfortable_brake=3.0,
-                 min_gap=3.0, time_headway=4, delta=4):
+    def __init__(self, desired_speed=25.0, max_accel=2.5, comfortable_brake=1.5,
+                 min_gap=3.0, time_headway=1.2, delta=4):
         """
         desired_speed: v0 (m/s)
         max_accel: a_max (m/s^2)
@@ -34,6 +34,7 @@ class IDMController:
         delta_v = ego_v - lead_v
         s_star = self.desired_gap(ego_v, delta_v)
         # s_star = min(s_star, gap * 2)  # avoid s*/s >> 1
+
 
         # acc = self.a_max * (1 - (ego_v / self.v0) ** self.delta - (s_star / gap) ** 2) if gap > 0.1 else -self.b
         acc = self.a_max * (1 - (ego_v / self.v0) ** self.delta - (s_star / gap) ** 2)
