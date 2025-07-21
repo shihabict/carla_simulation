@@ -146,12 +146,10 @@ import carla
 import numpy as np
 
 from nominal_contoller import NominalController
-from idm_controller import IDMController
-from fs_controller import FollowerStopperController
 
 class FollowerVehicle:
     def __init__(self, vehicle_actor: carla.Vehicle, map_ref: carla.Map,
-                 leader_vehicle: carla.Vehicle, reference_speed, waypoint_lookahead=1.0):
+                 leader_vehicle: carla.Vehicle, reference_speed, idm_controller, fs_controller, waypoint_lookahead=1.0):
         self.vehicle = vehicle_actor
         self.map = map_ref
         self.leader = leader_vehicle
@@ -160,8 +158,10 @@ class FollowerVehicle:
         self.reference_speed = reference_speed
 
         # Controllers
-        self.idm_controller = IDMController()
-        self.fs_controller = FollowerStopperController()
+        self.idm_controller = idm_controller
+        self.fs_controller = fs_controller
+        # self.idm_controller = IDMController()
+        # self.fs_controller = FollowerStopperController()
         self.nominal_controller = NominalController(dt=0.01, reference_speed=self.reference_speed)
 
     def get_speed(self):
@@ -184,7 +184,11 @@ class FollowerVehicle:
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
         acceleration = self.idm_controller.compute_acceleration(ego_speed, lead_speed, gap)
-        target_speed = max(0.0, ego_speed + acceleration * delta_t)
+        # raw_target_speed = ego_speed + acceleration * delta_t
+        # target_speed = np.clip(raw_target_speed, 0.0, self.idm_controller.v0)
+        #
+        # target_speed = max(0.0, ego_speed + acceleration * delta_t)
+        target_speed = max(0.0, ego_speed + acceleration * 1)
 
         current_loc = self.vehicle.get_location()
         current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
@@ -198,8 +202,8 @@ class FollowerVehicle:
         target_location.z = 0.0
         vec_to_wp = target_location - current_loc
 
-        current_speed = self.get_speed()
-        speed_error = target_speed - current_speed
+        # current_speed = self.get_speed()
+        speed_error = target_speed - ego_speed
         throttle = np.clip(speed_error * 0.5, 0.0, 1.0)
         brake = 0.0
         if speed_error < -0.5:
