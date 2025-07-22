@@ -144,7 +144,7 @@
 
 import carla
 import numpy as np
-
+from collections import deque
 from nominal_contoller import NominalController
 
 class FollowerVehicle:
@@ -163,6 +163,10 @@ class FollowerVehicle:
         # self.idm_controller = IDMController()
         # self.fs_controller = FollowerStopperController()
         self.nominal_controller = NominalController(dt=0.01, reference_speed=self.reference_speed)
+
+        # New: Leader speed buffer (rolling window of last 200 values)
+        self.leader_speed_buffer = deque(maxlen=200)
+
 
     def get_speed(self):
         v = self.vehicle.get_velocity()
@@ -183,6 +187,8 @@ class FollowerVehicle:
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
+
+        self.leader_speed_buffer.append(lead_speed)
 
         acceleration = self.idm_controller.compute_acceleration(ego_speed, lead_speed, gap)
         # acceleration = max(1.5,acceleration)
@@ -234,7 +240,16 @@ class FollowerVehicle:
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
 
-        reference_speed = self.nominal_controller.get_reference_speed(ego_speed)
+        # Update rolling buffer
+        self.leader_speed_buffer.append(lead_speed)
+
+        # reference_speed = self.nominal_controller.get_reference_speed(ego_speed)
+        # Use average of last 200 as reference speed
+        if len(self.leader_speed_buffer) < 10:
+            reference_speed = self.reference_speed  # fallback early on
+        else:
+            reference_speed = np.mean(self.leader_speed_buffer)
+
         commanded_speed, quadratic_regions = self.fs_controller.compute_velocity_command(
             r=reference_speed,
             dx=gap,
@@ -271,5 +286,8 @@ class FollowerVehicle:
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)
+
+        print(
+            f"[FS Controller] Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Ref: {reference_speed:.2f}")
 
         return commanded_speed, reference_speed, rel_speed, quadratic_regions

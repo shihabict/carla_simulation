@@ -42,6 +42,8 @@ class CarlaSimulator:
 
         self.logger = SimulationLogger(self.controller_type, self.num_ice_followers, self.reference_speed, self.sampling_frequency, self.switch_time)
 
+
+
     def load_custom_map(self,client, custom_map_path):
         xodr_content = load_xodr(custom_map_path)
         world = create_world_from_custom_map(client, xodr_content)
@@ -162,8 +164,8 @@ class CarlaSimulator:
         print(f"Max Steps : {max_steps}")
         try:
             # for i in range(1, len(speed_df)):
-            for i in range(100, 100000):
-            # for i in range(min_steps, max_steps):
+            # for i in range(100, 100000):
+            for i in range(min_steps, max_steps):
                 # Step-specific timing and speed
                 sim_time = speed_df.loc[i, 'time_rel']
                 # delta_t = speed_df.loc[i, 'time_diff']
@@ -241,11 +243,11 @@ class CarlaSimulator:
 
                     if not self.switch_time:
                         command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
-                        print(f"{label} - FS - {command_velocity} - {rel_speed}")
+                        # print(f"{label} - FS - {command_velocity} - {rel_speed}")
                     elif self.switch_time and sim_time >= simulation_start_time+self.switch_time:
                         # print(f"FS")
                         command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
-                        print(f"{label} - FS - {command_velocity} - {rel_speed}")
+                        # print(f"{label} - FS - {command_velocity} - {rel_speed}")
                     else:
                         command_velocity, rel_speed = follower.update_idm(delta_t)
                         reference_speed = 0
@@ -308,12 +310,12 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FS_IDM"
+    controller_name = "FS_IDM_avg_ref"
     reference_speed = 25
     switch_time = 200.0
-    simulation_start_time = 1
-    simulation_end_time = 1000.0
-    controller_type = "FS_IDM"
+    simulation_start_time = 100.0
+    simulation_end_time = 11000.0
+    controller_type = "FS_IDM_avg_ref"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=2, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)
     sim.run_asynchronously(simulation_start_time=simulation_start_time,simulation_end_time=simulation_end_time)
