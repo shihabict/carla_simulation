@@ -188,7 +188,7 @@ class FollowerVehicle:
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
 
-        self.leader_speed_buffer.append(lead_speed)
+        # self.leader_speed_buffer.append(lead_speed)
 
         acceleration = self.idm_controller.compute_acceleration(ego_speed, lead_speed, gap)
         # acceleration = max(1.5,acceleration)
@@ -235,20 +235,23 @@ class FollowerVehicle:
 
         return target_speed, rel_speed
 
-    def update_fs(self):
+    def update_fs(self,reference_speed=None):
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
 
         # Update rolling buffer
-        self.leader_speed_buffer.append(lead_speed)
+        # self.leader_speed_buffer.append(lead_speed)
 
         # reference_speed = self.nominal_controller.get_reference_speed(ego_speed)
         # Use average of last 200 as reference speed
-        if len(self.leader_speed_buffer) < 10:
-            reference_speed = self.reference_speed  # fallback early on
-        else:
-            reference_speed = np.mean(self.leader_speed_buffer)
+        # if len(self.leader_speed_buffer) < 10:
+        #     reference_speed = self.reference_speed  # fallback early on
+        # else:
+        #     reference_speed = np.mean(self.leader_speed_buffer)
+
+        if not reference_speed:
+            reference_speed = self.nominal_controller.get_reference_speed(ego_speed)
 
         commanded_speed, quadratic_regions = self.fs_controller.compute_velocity_command(
             r=reference_speed,
