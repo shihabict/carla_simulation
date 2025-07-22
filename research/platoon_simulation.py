@@ -162,14 +162,14 @@ class CarlaSimulator:
         print(f"Max Steps : {max_steps}")
         try:
             # for i in range(1, len(speed_df)):
-            # for i in range(1, 1000):
-            for i in range(min_steps, max_steps):
+            for i in range(100, 100000):
+            # for i in range(min_steps, max_steps):
                 # Step-specific timing and speed
                 sim_time = speed_df.loc[i, 'time_rel']
-                sim_time = i*self.sampling_frequency
-                delta_t = speed_df.loc[i, 'time_diff']
-                # delta_t = 0.1
+                # delta_t = speed_df.loc[i, 'time_diff']
+                delta_t = 0.02
                 target_speed = speed_df.loc[i, 'speed_mps']
+                # print(f"Leader speed: {target_speed}")
 
 
                 # --- Get current state and direction ---
@@ -180,6 +180,8 @@ class CarlaSimulator:
 
                 current_transform = self.leader.get_transform()
                 current_location = current_transform.location
+                self.leader.get_transform().location.y = self.leader.get_transform().location.y * 0
+                self.leader.get_transform().location.z = self.leader.get_transform().location.z * 0
                 current_yaw = current_transform.rotation.yaw  # In degrees
 
                 # --- Compute target yaw ---
@@ -196,6 +198,7 @@ class CarlaSimulator:
                 current_speed = self.leader.get_velocity()
                 current_speed_mps = np.linalg.norm([current_speed.x])
                 speed_error = target_speed - current_speed_mps
+                self.leader.get_transform().location.y = 0.0
 
                 throttle = np.clip(speed_error * 0.3, 0.0, 1.0)  # Proportional control
                 brake = 0.0
@@ -223,6 +226,8 @@ class CarlaSimulator:
                     #     print(self.leader.get_velocity())
                     #     follower.vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
                     label = f'follower_{j}'
+                    follower.vehicle.get_transform().location.y = follower.vehicle.get_transform().location.y * 0
+                    follower.vehicle.get_transform().location.z = follower.vehicle.get_transform().location.z * 0
 
                     # if self.controller_type == "FS":
                     #     command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
@@ -245,8 +250,10 @@ class CarlaSimulator:
                         command_velocity, rel_speed = follower.update_idm(delta_t)
                         reference_speed = 0
                         quadratic_region = (0,0,0)
-                        print(f"{label} - IDM - {command_velocity} - {rel_speed}")
+                        # print(f"{label} - IDM - {command_velocity} - {rel_speed}")
                     gap, leader_speed = follower.compute_gap_and_leader_speed()
+                    # follower.vehicle.get_transform().location.y = 0.0
+
 
                     # print(f"{label} Speed {follower.get_speed()}")
                     # print('---------------------------------------------------------------------------')
@@ -303,7 +310,7 @@ class CarlaSimulator:
 if __name__ == '__main__':
     controller_name = "FS_IDM"
     reference_speed = 25
-    switch_time = 100
+    switch_time = 200.0
     simulation_start_time = 1
     simulation_end_time = 1000.0
     controller_type = "FS_IDM"

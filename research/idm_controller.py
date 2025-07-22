@@ -38,5 +38,8 @@ class IDMController:
 
         # acc = self.a_max * (1 - (ego_v / self.v0) ** self.delta - (s_star / gap) ** 2) if gap > 0.1 else -self.b
         acc = self.a_max * (1 - (ego_v / self.v0) ** self.delta - (s_star / gap) ** 2)
-        return np.clip(acc, -self.b, self.a_max)
+        clipped_acc = np.clip(acc, -self.b, self.a_max)
+        # print(f"ACC {acc} ---- clipped {clipped_acc}")
+        return clipped_acc
+        # return max(min(acc, 1.0), -1.0)
 

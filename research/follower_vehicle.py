@@ -166,7 +166,7 @@ class FollowerVehicle:
 
     def get_speed(self):
         v = self.vehicle.get_velocity()
-        return np.linalg.norm([v.x])
+        return np.linalg.norm([v.x, v.y])
 
     def compute_gap_and_leader_speed(self):
         ego_loc = self.vehicle.get_location()
@@ -174,7 +174,7 @@ class FollowerVehicle:
         gap = ego_loc.distance(leader_loc)
 
         lead_velocity = self.leader.get_velocity()
-        lead_speed = np.linalg.norm([lead_velocity.x], ord=2)
+        lead_speed = np.linalg.norm([lead_velocity.x,lead_velocity.y])
         gap = gap - self.vehicle_length
 
         return gap, lead_speed
@@ -183,11 +183,17 @@ class FollowerVehicle:
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
+
         acceleration = self.idm_controller.compute_acceleration(ego_speed, lead_speed, gap)
-        # raw_target_speed = ego_speed + acceleration * delta_t
-        # target_speed = np.clip(raw_target_speed, 0.0, self.idm_controller.v0)
-        #
-        # target_speed = max(0.0, ego_speed + acceleration * delta_t)
+        # acceleration = max(1.5,acceleration)
+        # More aggressive acceleration when far behind
+        # if gap > 20 and lead_speed > ego_speed:
+        #     acceleration = min(acceleration * 1.5, self.idm_controller.a_max)
+
+        # 3. Gentle restart logic (fixes stuck ego when leader is far and moving)
+        if ego_speed < 0.1 and gap > self.idm_controller.s0 and lead_speed > 1.0:
+            acceleration = max(acceleration, 2.5)  # Give a push
+
         target_speed = max(0.0, ego_speed + acceleration * 1)
 
         current_loc = self.vehicle.get_location()
@@ -217,6 +223,9 @@ class FollowerVehicle:
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)
+
+        print(
+            f"IDM Update - Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Acc: {acceleration:.2f} | Target: {target_speed:.2f}")
 
         return target_speed, rel_speed
 
