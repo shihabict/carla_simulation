@@ -1,8 +1,11 @@
+import json
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.fft import fft, fftfreq
 
+from settings import BASE_DIR
 
 custom_colors = [
             '#1f77b4',
@@ -176,6 +179,51 @@ def compute_head_to_tail_amplification(csv_path, veq=None):
 
     return amplification
 
+def check_l2_string_stability(csv_path,target_col):
+    # Load and filter data
+    df = pd.read_csv(csv_path)
+    # df = df[(df['time'] >= start_time) & (df['time'] <= end_time)]
+    df = df.iloc[10000:25000]
+    df = df[['time', 'name', target_col]]
+
+    # Pivot table: time as index, vehicle names as columns, speed as values
+    pivot_df = df.pivot(index='time', columns='name', values=target_col).interpolate().dropna()
+
+    # Reorder columns: leader first, then the rest
+    cols = pivot_df.columns.tolist()
+    cols.remove('leader')
+    pivot_df = pivot_df[['leader'] + cols]
+
+    # vehicle_names = sorted([col for col in pivot_df.columns if col != 'leader'])
+    vehicle_names = [col for col in pivot_df.columns]
+
+    l2_violations = []
+
+    for i in range(1, len(vehicle_names) - 1):
+        print(f"Leader vehicle {vehicle_names[i - 1]}")
+        print(f"Ego vehicle {vehicle_names[i]}")
+
+        print(f"Follower vehicle {vehicle_names[i + 1]}")
+        print(f"--------------------------------------------------")
+        v_l = pivot_df[vehicle_names[i - 1]].values
+        v_n   = pivot_df[vehicle_names[i]].values
+        v_f = pivot_df[vehicle_names[i + 1]].values
+
+        l2_left  = np.linalg.norm(v_n - v_l)
+        l2_right = np.linalg.norm(v_f - v_n)
+
+        violation = l2_right > l2_left
+        l2_violations.append({'Vehicle': vehicle_names[i],'left_norm': float(l2_left),'right_norm': float(l2_right), 'violation': str(violation)})
+
+        # l2_violations.append((vehicle_names[i + 1], l2_left, l2_right, violation))
+
+    with open(f'{BASE_DIR}/Reports/time_domain_string_stability.json', 'w') as f:
+        json.dump(l2_violations, f, indent=4)
+
+    # return l2_violations
+
+
+
 # Example usage
 if __name__ == '__main__':
     # analyze_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv',target_col='speed', dt=0.02)
@@ -183,4 +231,5 @@ if __name__ == '__main__':
     # plot_delta_v('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
     # plot_follower_internal_delta_v('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
     ht_amplification = compute_head_to_tail_amplification('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
+    check_l2_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv', 'speed')
     print(ht_amplification)
