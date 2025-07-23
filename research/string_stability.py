@@ -5,20 +5,17 @@ from scipy.fft import fft, fftfreq
 
 
 custom_colors = [
-            '#1f77b4',  # blue
-            '#ff7f0e',  # orange
-            '#2ca02c',  # green
-            '#d62728',  # red
-            '#9467bd',  # purple
-            '#8c564b',  # brown
-            '#e377c2',  # pink
-            '#bcbd22',  # yellow-green
+            '#1f77b4',
+            '#ff7f0e',
+            '#2ca02c',
+            '#d62728',
+            '#9467bd',
+            '#8c564b',
+            '#e377c2',
+            '#bcbd22',
         ]
 
 def compute_transfer_ratio(leader_speed, follower_speed, dt):
-    """
-    Compute transfer function magnitude (|V_f(jω)| / |V_l(jω)|) using FFT.
-    """
     N = len(leader_speed)
     freq = fftfreq(N, d=dt)
 
@@ -47,7 +44,6 @@ def analyze_string_stability(csv_path, target_col, dt=0.02):
 
     # Interpolate missing values
     # pivot_df = pivot_df.interpolate().dropna()
-
     leader_speed = pivot_df['leader'].values
 
     # Plot transfer magnitude for each follower
@@ -62,7 +58,7 @@ def analyze_string_stability(csv_path, target_col, dt=0.02):
 
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Magnitude Ratio |V_f(jω)| / |V_l(jω)|')
-    plt.title(f'String Stability via Transfer Function {target_col}')
+    plt.title(f'String Stability via Transfer Function ({target_col})')
     plt.grid(True)
     plt.legend()
     plt.xlim(0, 1)  # Focus on low-frequency range
@@ -76,13 +72,6 @@ def analyze_string_stability(csv_path, target_col, dt=0.02):
 
 
 def plot_delta_v(csv_path: str, leader_name='leader'):
-    """
-    Loads simulation CSV and plots Δv(t) for each follower with respect to the leader.
-
-    Parameters:
-    - csv_path (str): Path to the CSV file
-    - leader_name (str): Name used for the leader vehicle in the 'name' column
-    """
     df = pd.read_csv(csv_path)
     df = df.iloc[10000:25000]
 
@@ -113,7 +102,7 @@ def plot_delta_v(csv_path: str, leader_name='leader'):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     plt.savefig(f"Reports/relative_speed_stability.png")
 
 def plot_follower_internal_delta_v(csv_path):
@@ -144,14 +133,54 @@ def plot_follower_internal_delta_v(csv_path):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     plt.savefig("Reports/delta_v_self_follower_plot.png")
 
+def compute_head_to_tail_amplification(csv_path, veq=None):
+    """
+    Compute Head-to-Tail Amplification metric A:
+    A = max(|v_last(t) - veq|) / max(|v_leader(t) - veq|)
+
+    Parameters:
+        csv_path (str): Path to the CSV log file
+        veq (float or None): Equilibrium speed (if None, use average leader speed)
+
+    Returns:
+        float: Amplification ratio A
+    """
+    # Load CSV
+    df = pd.read_csv(csv_path)
+    df = df.iloc[10000:25000]
+
+    # Filter relevant columns
+    df = df[['time', 'name', 'speed']]
+
+    # Pivot for easy access
+    pivot_df = df.pivot(index='time', columns='name', values='speed').dropna()
+
+    # Get leader and last follower
+    leader_speed = pivot_df['leader'].values
+    follower_names = sorted([col for col in pivot_df.columns if col != 'leader'])
+    last_follower_speed = pivot_df[follower_names[-1]].values
+
+    # Determine equilibrium speed if not provided
+    if veq is None:
+        veq = np.mean(leader_speed)
+
+    # Compute deviations
+    leader_dev = np.abs(leader_speed - veq)
+    last_follower_dev = np.abs(last_follower_speed - veq)
+
+    # Compute amplification
+    amplification = np.max(last_follower_dev) / np.max(leader_dev)
+
+    return amplification
 
 # Example usage
 if __name__ == '__main__':
-    analyze_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv',target_col='speed', dt=0.02)
-    analyze_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv',target_col='acc', dt=0.02)
-    plot_delta_v('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
-    plot_follower_internal_delta_v('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
-    print(0)
+    # analyze_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv',target_col='speed', dt=0.02)
+    # analyze_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv',target_col='acc', dt=0.02)
+    # plot_delta_v('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
+    # plot_follower_internal_delta_v('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
+    ht_amplification = compute_head_to_tail_amplification('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
+    print(ht_amplification)
