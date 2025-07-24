@@ -163,7 +163,7 @@ class SimulationLogger:
             df = pd.DataFrame(self.records)
         else:
             df = self.load_data(self.data_path)
-        followers = df[df['name'].str.contains('follower')]
+        followers = df[df['name'].str.contains('car')]
         plt.figure(figsize=(10, 6))
         for idx, (name, group) in enumerate(followers.groupby('name')):
             color = self.custom_colors[idx % len(self.custom_colors)]
@@ -181,7 +181,7 @@ class SimulationLogger:
             df = pd.DataFrame(self.records)
         else:
             df = self.load_data(self.data_path)
-        followers = df[df['name'].str.contains('follower')]
+        followers = df[df['name'].str.contains('car')]
         plt.figure(figsize=(10, 6))
         for idx, (label, group) in enumerate(df.groupby('name')):
             color = self.custom_colors[idx % len(self.custom_colors)]

@@ -141,7 +141,7 @@
 #         return commanded_speed, reference_speed, rel_speed, quadratic_regions
 #
 
-
+import math
 import carla
 import numpy as np
 from collections import deque
@@ -183,6 +183,30 @@ class FollowerVehicle:
 
         return gap, lead_speed
 
+    def get_steer(self, vehicle_transform, waypoint_transform):
+        """
+        Calculate steering angle needed to follow the center line.
+        """
+        vehicle_location = vehicle_transform.location
+        vehicle_yaw = math.radians(vehicle_transform.rotation.yaw)
+        waypoint_location = waypoint_transform.location
+
+        # Compute vector from vehicle to waypoint
+        dx = waypoint_location.x - vehicle_location.x
+        dy = waypoint_location.y - vehicle_location.y
+        target_yaw = math.atan2(dy, dx)
+        angle_diff = target_yaw - vehicle_yaw
+
+        # Normalize angle to [-pi, pi]
+        while angle_diff < -math.pi:
+            angle_diff += 2 * math.pi
+        while angle_diff > math.pi:
+            angle_diff -= 2 * math.pi
+
+        # CARLA steering is in [-1, 1] range, so scale if needed
+        steer = max(-0.0, min(0.0, angle_diff))
+        return steer
+
     def update_idm(self, delta_t):
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
@@ -203,16 +227,19 @@ class FollowerVehicle:
         target_speed = max(0.0, ego_speed + acceleration * 1)
 
         current_loc = self.vehicle.get_location()
-        current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
+        # current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
+        current_wp = self.map.get_waypoint(current_loc)
         next_wp_list = current_wp.next(self.lookahead)
         if not next_wp_list:
             return False
 
         next_wp = next_wp_list[0]
         target_location = next_wp.transform.location
-        target_location.y = 0.0
-        target_location.z = 0.0
+        next_wp.transform.location.y = 0.0
+        next_wp.transform.location.z = 0.0
         vec_to_wp = target_location - current_loc
+
+        steering = self.get_steer(self.vehicle.get_transform(),next_wp.transform)
 
         # current_speed = self.get_speed()
         speed_error = target_speed - ego_speed
@@ -225,6 +252,7 @@ class FollowerVehicle:
         control = carla.VehicleControl()
         control.throttle = throttle
         control.brake = brake
+        # control.steer = steering
         control.steer = 0.0
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
@@ -268,11 +296,19 @@ class FollowerVehicle:
         if not next_wp_list:
             return False
 
+        # next_wp = next_wp_list[0]
+        # target_location = next_wp.transform.location
+        # target_location.y = 0.0
+        # target_location.z = 0.0
+        # vec_to_wp = target_location - current_loc
+
         next_wp = next_wp_list[0]
         target_location = next_wp.transform.location
-        target_location.y = 0.0
-        target_location.z = 0.0
+        next_wp.transform.location.y = 0.0
+        next_wp.transform.location.z = 0.0
         vec_to_wp = target_location - current_loc
+
+        steering = self.get_steer(self.vehicle.get_transform(), next_wp.transform)
 
         current_speed = self.get_speed()
         speed_error = commanded_speed - current_speed
@@ -286,6 +322,7 @@ class FollowerVehicle:
         control.throttle = throttle
         control.brake = brake
         control.steer = 0.0
+        # control.steer = steering
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)

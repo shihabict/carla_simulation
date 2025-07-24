@@ -52,9 +52,10 @@ class CarlaSimulator:
 
     def setup_simulation(self):
         settings = self.world.get_settings()
-        settings.synchronous_mode = True
+        settings.synchronous_mode = False
         # settings.synchronous_mode = False
-        # settings.fixed_delta_seconds = 0.05
+        # settings.fixed_delta_seconds = 0.02
+        # settings.max_substeps = 50
         # settings.fixed_delta_seconds = 0.01
         # self.delta_t = settings.fixed_delta_seconds
         self.world.apply_settings(settings)
@@ -155,7 +156,7 @@ class CarlaSimulator:
         #     print(f"follower_ID {follower.vehicle.id} Location : {follower.vehicle.get_location()}")
         #     print(f"Leader Id {follower.leader.id} Location : {follower.leader.get_location()}")
         #     print(f'--------------------------------------------------------------------------')
-        self.world.tick()
+        # self.world.tick()
 
         print("Starting leader-follower simulation...")
 
@@ -229,7 +230,7 @@ class CarlaSimulator:
                     # if target_speed == 0:
                     #     print(self.leader.get_velocity())
                     #     follower.vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
-                    label = f'follower_{j}'
+                    label = f'car{j+1}'
                     follower.vehicle.get_transform().location.y = follower.vehicle.get_transform().location.y * 0
                     follower.vehicle.get_transform().location.z = follower.vehicle.get_transform().location.z * 0
 
@@ -249,7 +250,7 @@ class CarlaSimulator:
                         ref_velocity = np.mean(latest_leader_speed)
                         command_velocity, rel_speed, quadratic_region = follower.update_fs(ref_velocity)
                         gap, leader_speed = follower.compute_gap_and_leader_speed()
-                        self.logger.log(sim_time=sim_time, name=f'follower{j}', location=follower.vehicle.get_location(),
+                        self.logger.log(sim_time=sim_time, name=f'car{j+1}', location=follower.vehicle.get_location(),
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
                                         gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed, quadratic_region=quadratic_region)
                     else:
@@ -257,7 +258,7 @@ class CarlaSimulator:
                         ref_velocity = 0
                         quadratic_region = (0,0,0)
                         gap, leader_speed = follower.compute_gap_and_leader_speed()
-                        self.logger.log(sim_time=sim_time, name=f'follower{j}',
+                        self.logger.log(sim_time=sim_time, name=f'car{j+1}',
                                         location=follower.vehicle.get_location(),
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
                                         gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed,
