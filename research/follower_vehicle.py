@@ -293,4 +293,4 @@ class FollowerVehicle:
         print(
             f"[FS Controller] Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Ref: {reference_speed:.2f}")
 
-        return commanded_speed, reference_speed, rel_speed, quadratic_regions
+        return commanded_speed, rel_speed, quadratic_regions

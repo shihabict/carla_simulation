@@ -36,7 +36,7 @@ def compute_transfer_ratio(leader_speed, follower_speed, dt):
 
 def analyze_string_stability(csv_path, target_col, dt=0.02):
     df = pd.read_csv(csv_path)
-    df = df.iloc[10000:25000]
+    df = df.iloc[10000:20000]
     df = df[['time', 'name', target_col]]
 
     # Get unique followers (excluding leader)
@@ -226,10 +226,11 @@ def check_l2_string_stability(csv_path,target_col):
 
 # Example usage
 if __name__ == '__main__':
-    # analyze_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv',target_col='speed', dt=0.02)
-    # analyze_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv',target_col='acc', dt=0.02)
-    # plot_delta_v('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
-    # plot_follower_internal_delta_v('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
-    ht_amplification = compute_head_to_tail_amplification('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv')
-    check_l2_string_stability('Reports/sim_data_FS_IDM_nomi_nV_3_ref25_f0.02.csv', 'speed')
+    data_path = 'Reports/sim_data_FS_IDM_avg_ref_nV_6_ref25_f0.02.csv'
+    analyze_string_stability(data_path,target_col='speed', dt=0.02)
+    analyze_string_stability(data_path,target_col='acc', dt=0.02)
+    plot_delta_v(data_path)
+    plot_follower_internal_delta_v(data_path)
+    ht_amplification = compute_head_to_tail_amplification(data_path)
+    check_l2_string_stability(data_path, 'speed')
     print(ht_amplification)

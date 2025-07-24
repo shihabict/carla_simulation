@@ -19,29 +19,28 @@ class SimulationLogger:
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
         self.custom_colors = [
-            '#1f77b4',  # blue
-            '#ff7f0e',  # orange
-            '#2ca02c',  # green
-            '#d62728',  # red
-            '#9467bd',  # purple
-            '#8c564b',  # brown
-            '#e377c2',  # pink
-            '#bcbd22',  # yellow-green
+            "#041e31",
+            '#ff7f0e',
+            '#2ca02c',
+            '#d62728',
+            "#7d49ad",
+            '#8c564b',
+            "#eeb1dc",
+            '#bcbd22',
         ]
 
-    def log(self, sim_time, name, location, velocity, acceleration, gap=None, command_velocity=None, reference_speed=None,rel_speed=None, quadratic_region=(0,0,0)):
-        speed = np.linalg.norm([velocity.x, velocity.y, velocity.z])
+    def log(self, sim_time, name, location, velocity, acceleration, gap=None, ref_speed=None, rel_speed=None, quadratic_region=(0,0,0)):
+        # speed = np.linalg.norm([velocity.x])
         self.records.append({
             'time': sim_time,
             'name': name,
             'x': location.x,
             'y': location.y,
             'z': location.z,
-            'speed': speed,
+            'speed': velocity,
             'acc': acceleration,
             'gap': gap,
-            'command_velocity': command_velocity,
-            'reference_velocity':reference_speed,
+            'ref_velocity': ref_speed,
             'rel_velocity': rel_speed,
             'quadratic_region': quadratic_region
         })
@@ -109,7 +108,7 @@ class SimulationLogger:
         plt.figure(figsize=(10, 6))
         for idx, (label, group) in enumerate(df.groupby('name')):
             color = self.custom_colors[idx % len(self.custom_colors)]
-            plt.plot(group['time'], group['reference_velocity'], label=label, color=color, linewidth=1)
+            plt.plot(group['time'], group['ref_velocity'], label=label, color=color, linewidth=1)
         plt.xlabel('Time (s)')
         plt.ylabel('Ref Speed (m/s)')
         plt.title(f'Reference speed vs Time with reference speed {self.reference_speed}')

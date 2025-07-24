@@ -57,8 +57,8 @@ class SpeedProfileController:
         original_rate = 1 / avg_interval if avg_interval > 0 else 50
 
         # Compute downsampling step to match target_rate
-        step = int(round(original_rate / self.target_rate))
-        step = max(1, step)
+        # step = int(round(original_rate / self.target_rate))
+        # step = max(1, step)
 
         # Downsample the dataframe
         # self.df = self.df.iloc[::step].reset_index(drop=True)

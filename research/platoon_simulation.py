@@ -204,10 +204,10 @@ class CarlaSimulator:
                 speed_error = target_speed - current_speed_mps
                 self.leader.get_transform().location.y = 0.0
 
-                throttle = np.clip(speed_error * 0.3, 0.0, 1.0)  # Proportional control
+                throttle = np.clip(speed_error * 0.5, 0.0, 1.0)  # Proportional control
                 brake = 0.0
                 if speed_error < -0.5:
-                    brake = np.clip(-speed_error * 0.3, 0.0, 1.0)
+                    brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
                     throttle = 0.0
 
                 # --- Apply control ---
@@ -219,8 +219,7 @@ class CarlaSimulator:
                     print(f"Leader Steering : {control.steer}")
                 self.leader.apply_control(control)
 
-
-                self.logger.log(sim_time, 'leader', self.leader.get_location(), self.leader.get_velocity(), round(self.leader.get_acceleration().x,3))
+                self.logger.log(sim_time, 'leader', self.leader.get_location(), target_speed, round(self.leader.get_acceleration().x,3))
 
                 # --- Followers control ---
                 # previous_leader_vel = velocity
@@ -234,44 +233,35 @@ class CarlaSimulator:
                     follower.vehicle.get_transform().location.y = follower.vehicle.get_transform().location.y * 0
                     follower.vehicle.get_transform().location.z = follower.vehicle.get_transform().location.z * 0
 
-                    # if self.controller_type == "FS":
-                    #     command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs()
-                    # else:
-                    #     command_velocity, rel_speed = follower.update_idm(delta_t)
-                    #     reference_speed = 0
-                    #     quadratic_region = (0,0,0)
-
 
                     # update the logic to switch between controllers
 
-                    if not self.switch_time:
-
-                        reference_speed = np.mean(self.leader_speed_buffer[-200:])
-                        # command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs(reference_speed)
-                        command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs(reference_speed)
-                        # print(f"{label} - FS - {command_velocity} - {rel_speed}")
-                    elif self.switch_time and sim_time >= simulation_start_time+self.switch_time:
-                        # print(f"FS")
-                        reference_speed = np.mean(self.leader_speed_buffer[-200:])
-                        # command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs(reference_speed)
-                        command_velocity, reference_speed, rel_speed, quadratic_region = follower.update_fs(reference_speed)
-                        # print(0)
-                        # print(f"{label} - FS - {command_velocity} - {rel_speed}")
+                    # if not self.switch_time:
+                    #     ref_velocity = np.mean(self.leader_speed_buffer[-200:])
+                    #     command_velocity, rel_speed, quadratic_region = follower.update_fs(ref_velocity)
+                    #
+                    #     gap, leader_speed = follower.compute_gap_and_leader_speed()
+                    #     self.logger.log(sim_time, f'follower{j}', follower.vehicle.get_location(),
+                    #                     command_velocity, follower.vehicle.get_acceleration().x,
+                    #                     gap, ref_velocity, rel_speed, quadratic_region)
+                    if self.switch_time and sim_time >= simulation_start_time + self.switch_time:
+                        latest_leader_speed = self.leader_speed_buffer[-200:]
+                        ref_velocity = np.mean(latest_leader_speed)
+                        command_velocity, rel_speed, quadratic_region = follower.update_fs(ref_velocity)
+                        gap, leader_speed = follower.compute_gap_and_leader_speed()
+                        self.logger.log(sim_time=sim_time, name=f'follower{j}', location=follower.vehicle.get_location(),
+                                        velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
+                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed, quadratic_region=quadratic_region)
                     else:
                         command_velocity, rel_speed = follower.update_idm(delta_t)
-                        reference_speed = 0
+                        ref_velocity = 0
                         quadratic_region = (0,0,0)
-                        # print(f"{label} - IDM - {command_velocity} - {rel_speed}")
-                    gap, leader_speed = follower.compute_gap_and_leader_speed()
-                    # follower.vehicle.get_transform().location.y = 0.0
-
-
-                    # print(f"{label} Speed {follower.get_speed()}")
-                    # print('---------------------------------------------------------------------------')
-
-                    self.logger.log(sim_time, f'follower_{j}', follower.vehicle.get_location(),
-                                    follower.vehicle.get_velocity(), follower.vehicle.get_acceleration().x,
-                                    gap, command_velocity, reference_speed, rel_speed, quadratic_region)
+                        gap, leader_speed = follower.compute_gap_and_leader_speed()
+                        self.logger.log(sim_time=sim_time, name=f'follower{j}',
+                                        location=follower.vehicle.get_location(),
+                                        velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
+                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed,
+                                        quadratic_region=quadratic_region)
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
@@ -313,20 +303,20 @@ class CarlaSimulator:
         self.logger.plot_trajectories()
         self.logger.plot_speeds()
         self.logger.plot_reference_velocity()
-        self.logger.plot_command_velocity()
+        # self.logger.plot_command_velocity()
         self.logger.plot_relative_velocity()
         self.logger.plot_gap_vs_time()
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    # controller_name = "FS_IDM_avg_ref"
-    controller_name = "FS_IDM_nomi"
-    controller_type = "FS_IDM_nomi"
+    controller_name = "FS_IDM_avg_ref"
+    # controller_name = "FS_IDM_nomi"
+    controller_type = "FS_IDM_avg_ref"
     reference_speed = 25
-    switch_time = 200.0
-    simulation_start_time = 100.0
-    simulation_end_time = 10000.0
+    switch_time = 120.0
+    simulation_start_time = 0.0
+    simulation_end_time = 500.0
     # controller_type = "FS_IDM_avg_ref"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=3, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)
     sim.run_asynchronously(simulation_start_time=simulation_start_time,simulation_end_time=simulation_end_time)
