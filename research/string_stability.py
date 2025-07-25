@@ -226,7 +226,7 @@ def check_l2_string_stability(csv_path,target_col):
 
 # Example usage
 if __name__ == '__main__':
-    data_path = 'Reports/sim_data_FS_IDM_avg_ref_nV_6_ref25_f0.02.csv'
+    data_path = 'Reports/sim_data_FS_IDM_avg_ref_speed_nV_6_ref25_f0.02.csv'
     analyze_string_stability(data_path,target_col='speed', dt=0.02)
     analyze_string_stability(data_path,target_col='acc', dt=0.02)
     plot_delta_v(data_path)
