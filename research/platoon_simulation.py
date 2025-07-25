@@ -128,7 +128,7 @@ class CarlaSimulator:
 
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
-            offset_distance = (i + 1) * 8.0
+            offset_distance = (i + 1) * 8.6
             base_spawn.location.y = 0.00
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
@@ -252,17 +252,15 @@ class CarlaSimulator:
                         gap, leader_speed = follower.compute_gap_and_leader_speed()
                         self.logger.log(sim_time=sim_time, name=f'car{j+1}', location=follower.vehicle.get_location(),
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
-                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed, quadratic_region=quadratic_region)
+                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
                     else:
                         command_velocity, rel_speed = follower.update_idm(delta_t)
                         ref_velocity = 0
-                        quadratic_region = (0,0,0)
                         gap, leader_speed = follower.compute_gap_and_leader_speed()
                         self.logger.log(sim_time=sim_time, name=f'car{j+1}',
                                         location=follower.vehicle.get_location(),
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
-                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed,
-                                        quadratic_region=quadratic_region)
+                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
@@ -310,9 +308,9 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FS_IDM_avg_ref"
+    controller_name = "FS_IDM_avg_ref_speed"
     # controller_name = "FS_IDM_nomi"
-    controller_type = "FS_IDM_avg_ref"
+    controller_type = "FS_IDM_avg_ref_speed"
     reference_speed = 25
     switch_time = 120.0
     simulation_start_time = 0.0

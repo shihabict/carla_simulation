@@ -263,7 +263,7 @@ class FollowerVehicle:
 
         return target_speed, rel_speed
 
-    def update_fs(self,reference_speed=None):
+    def update_fs(self,reference_speed):
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
@@ -278,8 +278,8 @@ class FollowerVehicle:
         # else:
         #     reference_speed = np.mean(self.leader_speed_buffer)
 
-        if not reference_speed:
-            reference_speed = self.nominal_controller.get_reference_speed(ego_speed)
+        # if not reference_speed:
+        #     reference_speed = self.nominal_controller.get_reference_speed(ego_speed)
 
         commanded_speed, quadratic_regions = self.fs_controller.compute_velocity_command(
             r=reference_speed,

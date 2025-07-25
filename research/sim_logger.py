@@ -29,7 +29,7 @@ class SimulationLogger:
             '#bcbd22',
         ]
 
-    def log(self, sim_time, name, location, velocity, acceleration, gap=None, ref_speed=None, rel_speed=None, quadratic_region=(0,0,0)):
+    def log(self, sim_time, name, location, velocity, acceleration, gap=None, ref_speed=None, rel_speed=None):
         # speed = np.linalg.norm([velocity.x])
         self.records.append({
             'time': sim_time,
@@ -41,9 +41,9 @@ class SimulationLogger:
             'acc': acceleration,
             'gap': gap,
             'ref_velocity': ref_speed,
-            'rel_velocity': rel_speed,
-            'quadratic_region': quadratic_region
+            'rel_velocity': rel_speed
         })
+        print(0)
 
     def save(self):
         filename = f'sim_data_{self.controller_type}_nV_{self.num_vehicle}_ref{self.reference_speed}_f{self.sampling_frequency}.csv'
