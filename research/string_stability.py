@@ -139,7 +139,7 @@ def plot_follower_internal_delta_v(csv_path):
     # plt.show()
     plt.savefig("Reports/delta_v_self_follower_plot.png")
 
-def compute_head_to_tail_amplification(csv_path, veq=None):
+def compute_head_to_tail_amplification(csv_path,start_time,end_time):
     """
     Compute Head-to-Tail Amplification metric A:
     A = max(|v_last(t) - veq|) / max(|v_leader(t) - veq|)
@@ -153,10 +153,22 @@ def compute_head_to_tail_amplification(csv_path, veq=None):
     """
     # Load CSV
     df = pd.read_csv(csv_path)
-    df = df.iloc[10000:25000]
 
     # Filter relevant columns
     df = df[['time', 'name', 'speed']]
+    veq = np.mean(df['speed'])
+
+    # if start_time is not None and end_time is not None:
+    #     lower_limit = int(start_time / 0.02)
+    #     upper_limit = int(end_time / 0.02)
+    #
+    #     print(f"Plotting from step {lower_limit} to {upper_limit} (time {start_time} to {end_time})")
+    #     df_filtered = df.iloc[lower_limit:upper_limit]
+    #     df = df_filtered
+
+    # df = df.iloc[0:25000]
+
+
 
     # Pivot for easy access
     pivot_df = df.pivot(index='time', columns='name', values='speed').dropna()
@@ -167,8 +179,9 @@ def compute_head_to_tail_amplification(csv_path, veq=None):
     last_follower_speed = pivot_df[follower_names[-1]].values
 
     # Determine equilibrium speed if not provided
-    if veq is None:
-        veq = np.mean(leader_speed)
+    # if veq is None:
+    # veq = np.mean(leader_speed)
+
 
     # Compute deviations
     leader_dev = np.abs(leader_speed - veq)
@@ -179,11 +192,63 @@ def compute_head_to_tail_amplification(csv_path, veq=None):
 
     return amplification
 
+
+def plot_bar_with_trend_arrow(l2_violations):
+    # Load the JSON data
+    # with open(data_path, 'r') as f:
+    #     data = json.load(f)
+    data = l2_violations
+    # Extract data for plotting
+    vehicles = [d['Vehicle'] for d in data]
+    left_norms = [d['left_norm'] for d in data]
+    right_norms = [d['right_norm'] for d in data]
+
+    # Trend line will follow the higher value of the two bars for each vehicle
+    trend_values = [max(l, r)+2 for l, r in zip(left_norms, right_norms)]
+    x = np.arange(len(vehicles))
+    width = 0.25
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars1 = ax.bar(x - width/2, left_norms, width, label='Left Norm', color='purple')
+    bars2 = ax.bar(x + width/2, right_norms, width, label='Right Norm', color='green')
+
+    # Add value labels on top of bars
+    for bar in bars1 + bars2:
+        height = bar.get_height()
+        ax.annotate(f'{height:.2f}',
+                    xy=(bar.get_x() + bar.get_width() / 2, height),
+                    xytext=(0, 3),
+                    textcoords="offset points",
+                    ha='center', va='bottom', fontsize=8)
+
+    # Plot the trend line
+    ax.plot(x, trend_values, color='red', linestyle='-', linewidth=2)
+
+    # Add arrow at the end of the trend line
+    ax.annotate('',
+                xy=(x[-1], trend_values[-1]),
+                xytext=(x[-2], trend_values[-2]),
+                arrowprops=dict(arrowstyle='-|>', color='red', lw=2, mutation_scale=15))
+
+    # Labels and legends
+    ax.set_xlabel('Vehicle')
+    ax.set_ylabel('Disturbance')
+    ax.set_title('Disturbance Amplification with Leader and Follower Using L2 Norm')
+    ax.set_xticks(x)
+    ax.set_xticklabels(vehicles)
+    ax.legend()
+
+    plt.tight_layout()
+
+    plt.savefig(f"Final_Reports/head_tail_amplification.pdf",dpi=300)
+
+
 def check_l2_string_stability(csv_path,target_col):
     # Load and filter data
     df = pd.read_csv(csv_path)
     # df = df[(df['time'] >= start_time) & (df['time'] <= end_time)]
-    df = df.iloc[10000:25000]
+    # df = df.iloc[10000:25000]
     df = df[['time', 'name', target_col]]
 
     # Pivot table: time as index, vehicle names as columns, speed as values
@@ -220,10 +285,9 @@ def check_l2_string_stability(csv_path,target_col):
     with open(f'{BASE_DIR}/Reports/time_domain_string_stability.json', 'w') as f:
         json.dump(l2_violations, f, indent=4)
 
+    plot_bar_with_trend_arrow(l2_violations)
+
     # return l2_violations
-
-
-
 # Example usage
 if __name__ == '__main__':
     data_path = 'Reports/sim_data_FS_IDM_avg_ref_speed_nV_6_ref25_f0.02.csv'
@@ -231,6 +295,6 @@ if __name__ == '__main__':
     # transfer_function_string_stability(data_path, target_col='acc', dt=0.02)
     # plot_delta_v(data_path)
     # plot_follower_internal_delta_v(data_path)
-    # ht_amplification = compute_head_to_tail_amplification(data_path)
+    ht_amplification = compute_head_to_tail_amplification(data_path, start_time=0, end_time=300)
     check_l2_string_stability(data_path, 'speed')
-    # print(ht_amplification)
+    print(ht_amplification)
