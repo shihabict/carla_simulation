@@ -18,16 +18,18 @@ class SimulationLogger:
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
-        self.custom_colors = [
-            "#041e31",
-            '#ff7f0e',
-            '#2ca02c',
-            '#d62728',
-            "#7d49ad",
-            '#8c564b',
-            "#eeb1dc",
-            '#bcbd22',
-        ]
+        # self.custom_colors = [
+        #     "#041e31",
+        #     '#ff7f0e',
+        #     '#2ca02c',
+        #     '#d62728',
+        #     "#7d49ad",
+        #     '#8c564b',
+        #     "#eeb1dc",
+        #     '#bcbd22',
+        # ]
+
+        self.custom_colors = ['#38028F', '#8F0202', '#8F0244', '#02448F', '#028F4A', '#8F6A02', "#00B1B8"]
 
     def log(self, sim_time, name, location, velocity, acceleration, gap=None, ref_speed=None, rel_speed=None):
         # speed = np.linalg.norm([velocity.x])

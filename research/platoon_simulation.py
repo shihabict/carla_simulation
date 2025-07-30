@@ -237,15 +237,15 @@ class CarlaSimulator:
 
                     # update the logic to switch between controllers
 
-                    # if not self.switch_time:
-                    #     ref_velocity = np.mean(self.leader_speed_buffer[-200:])
-                    #     command_velocity, rel_speed, quadratic_region = follower.update_fs(ref_velocity)
-                    #
-                    #     gap, leader_speed = follower.compute_gap_and_leader_speed()
-                    #     self.logger.log(sim_time, f'follower{j}', follower.vehicle.get_location(),
-                    #                     command_velocity, follower.vehicle.get_acceleration().x,
-                    #                     gap, ref_velocity, rel_speed, quadratic_region)
-                    if self.switch_time and sim_time >= simulation_start_time + self.switch_time:
+                    if self.switch_time == 0:
+                        latest_leader_speed = self.leader_speed_buffer[-200:]
+                        ref_velocity = np.mean(latest_leader_speed)
+                        command_velocity, rel_speed, quadratic_region = follower.update_fs(ref_velocity)
+                        gap, leader_speed = follower.compute_gap_and_leader_speed()
+                        self.logger.log(sim_time=sim_time, name=f'car{j + 1}', location=follower.vehicle.get_location(),
+                                        velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
+                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
+                    elif self.switch_time and sim_time >= simulation_start_time + self.switch_time:
                         latest_leader_speed = self.leader_speed_buffer[-200:]
                         ref_velocity = np.mean(latest_leader_speed)
                         command_velocity, rel_speed, quadratic_region = follower.update_fs(ref_velocity)
@@ -264,7 +264,7 @@ class CarlaSimulator:
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
-                cam_transform = last_follower.get_transform().transform(carla.Location(x=-15, z=10))
+                cam_transform = last_follower.get_transform().transform(carla.Location(x=-10, y=-4, z=20))
                 self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
 
                 # Sync CARLA to time step
@@ -298,21 +298,22 @@ class CarlaSimulator:
         settings.fixed_delta_seconds = None
         self.world.apply_settings(settings)
         # Logging and Plots
-        self.logger.save()
-        self.logger.plot_trajectories()
-        self.logger.plot_speeds()
-        self.logger.plot_reference_velocity()
-        # self.logger.plot_command_velocity()
-        self.logger.plot_relative_velocity()
-        self.logger.plot_gap_vs_time()
+        # self.logger.save()
+        # self.logger.plot_trajectories()
+        # self.logger.plot_speeds()
+        # self.logger.plot_reference_velocity()
+        # # self.logger.plot_command_velocity()
+        # self.logger.plot_relative_velocity()
+        # self.logger.plot_gap_vs_time()
+        # self.logger.plot_time_space_diagram()
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FS_IDM_avg_ref_speed"
+    controller_name = "FS"
     # controller_name = "FS_IDM_nomi"
-    controller_type = "FS_IDM_avg_ref_speed"
+    controller_type = "FS"
     reference_speed = 25
-    switch_time = 120.0
+    switch_time = 0
     simulation_start_time = 0.0
     simulation_end_time = 500.0
     # controller_type = "FS_IDM_avg_ref"

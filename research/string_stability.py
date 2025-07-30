@@ -34,7 +34,7 @@ def compute_transfer_ratio(leader_speed, follower_speed, dt):
     return freq[:N // 2], magnitude_ratio[:N // 2]  # return only positive freqs
 
 
-def analyze_string_stability(csv_path, target_col, dt=0.02):
+def transfer_function_string_stability(csv_path, target_col, dt=0.02):
     df = pd.read_csv(csv_path)
     df = df.iloc[10000:20000]
     df = df[['time', 'name', target_col]]
@@ -227,10 +227,10 @@ def check_l2_string_stability(csv_path,target_col):
 # Example usage
 if __name__ == '__main__':
     data_path = 'Reports/sim_data_FS_IDM_avg_ref_speed_nV_6_ref25_f0.02.csv'
-    analyze_string_stability(data_path,target_col='speed', dt=0.02)
-    analyze_string_stability(data_path,target_col='acc', dt=0.02)
-    plot_delta_v(data_path)
-    plot_follower_internal_delta_v(data_path)
-    ht_amplification = compute_head_to_tail_amplification(data_path)
+    # transfer_function_string_stability(data_path, target_col='speed', dt=0.02)
+    # transfer_function_string_stability(data_path, target_col='acc', dt=0.02)
+    # plot_delta_v(data_path)
+    # plot_follower_internal_delta_v(data_path)
+    # ht_amplification = compute_head_to_tail_amplification(data_path)
     check_l2_string_stability(data_path, 'speed')
-    print(ht_amplification)
+    # print(ht_amplification)
