@@ -2,8 +2,28 @@ import json
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.fft import fft, fftfreq
+import matplotlib
+
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib import rcParams  # Correct import
+
+# Enable LaTeX rendering
+rcParams["text.usetex"] = True
+rcParams["font.family"] = "serif"
+rcParams["font.serif"] = "Times"
+# Plot styling
+axes_size = 26
+tick_size = 22
+rcParams["text.usetex"] = True
+rcParams["font.family"] = "serif"
+rcParams["font.serif"] = ["Times"]
+rcParams["font.size"] = tick_size
+rcParams["axes.labelsize"] = axes_size
+rcParams["xtick.labelsize"] = tick_size
+rcParams["ytick.labelsize"] = tick_size
+rcParams["legend.fontsize"] = tick_size
 
 from settings import BASE_DIR
 
@@ -194,9 +214,6 @@ def compute_head_to_tail_amplification(csv_path,start_time,end_time):
 
 
 def plot_bar_with_trend_arrow(l2_violations):
-    # Load the JSON data
-    # with open(data_path, 'r') as f:
-    #     data = json.load(f)
     data = l2_violations
     # Extract data for plotting
     vehicles = [d['Vehicle'] for d in data]
@@ -204,44 +221,47 @@ def plot_bar_with_trend_arrow(l2_violations):
     right_norms = [d['right_norm'] for d in data]
 
     # Trend line will follow the higher value of the two bars for each vehicle
-    trend_values = [max(l, r)+2 for l, r in zip(left_norms, right_norms)]
+    trend_values = [max(l, r)+10 for l, r in zip(left_norms, right_norms)]
     x = np.arange(len(vehicles))
-    width = 0.25
+    width = 0.35
 
     # Create the plot
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bars1 = ax.bar(x - width/2, left_norms, width, label='Left Norm', color='purple')
-    bars2 = ax.bar(x + width/2, right_norms, width, label='Right Norm', color='green')
+    fig, ax = plt.subplots(figsize=(11, 6.5))
+    bars1 = ax.bar(x - width/2, left_norms, width, label=r'$||v_{n-1}(t)-v_{n}(t)||_2$', color='purple')
+    bars2 = ax.bar(x + width/2, right_norms, width, label=r'$||v_{n}(t)-v_{n+1}(t)||_2$', color='green')
 
     # Add value labels on top of bars
     for bar in bars1 + bars2:
         height = bar.get_height()
         ax.annotate(f'{height:.2f}',
                     xy=(bar.get_x() + bar.get_width() / 2, height),
-                    xytext=(0, 3),
+                    xytext=(0, 1),
                     textcoords="offset points",
-                    ha='center', va='bottom', fontsize=8)
+                    ha='center', va='bottom', fontsize=14)
 
     # Plot the trend line
-    ax.plot(x, trend_values, color='red', linestyle='-', linewidth=2)
+    ax.plot(x, trend_values, color='purple', linestyle='-', linewidth=2)
 
     # Add arrow at the end of the trend line
     ax.annotate('',
-                xy=(x[-1], trend_values[-1]),
+                xy=(x[-1]+ 0.08, trend_values[-1]),
                 xytext=(x[-2], trend_values[-2]),
-                arrowprops=dict(arrowstyle='-|>', color='red', lw=2, mutation_scale=15))
+                arrowprops=dict(arrowstyle='-|>', color='purple', lw=2, mutation_scale=10))
 
     # Labels and legends
-    ax.set_xlabel('Vehicle')
-    ax.set_ylabel('Disturbance')
-    ax.set_title('Disturbance Amplification with Leader and Follower Using L2 Norm')
+    ax.set_xlabel(r'\textbf{Vehicle n}')
+    ax.set_ylabel(r'\textbf{L2 Norm of Relative Velocity}')
+    ax.set_title(r'\textbf{L2 Norm-Based Disturbance Amplification Across Vehicle Platoon}', fontsize=24)
     ax.set_xticks(x)
     ax.set_xticklabels(vehicles)
-    ax.legend()
+    ax.legend(ncol=2, fontsize=24)
+    plt.xticks(fontsize=26)
+    plt.yticks(fontsize=26)
+    # plt.legend(ncol=2,fontsize=24)
 
     plt.tight_layout()
 
-    plt.savefig(f"Final_Reports/head_tail_amplification.pdf",dpi=300)
+    plt.savefig(f"Final_Reports/time_domain_string_stability.pdf",dpi=300, format='pdf', bbox_inches='tight')
 
 
 def check_l2_string_stability(csv_path,target_col):
@@ -250,6 +270,8 @@ def check_l2_string_stability(csv_path,target_col):
     # df = df[(df['time'] >= start_time) & (df['time'] <= end_time)]
     # df = df.iloc[10000:25000]
     df = df[['time', 'name', target_col]]
+
+    df['name'] = df['name'].str.replace('car', 'Vehicle ', regex=False)
 
     # Pivot table: time as index, vehicle names as columns, speed as values
     pivot_df = df.pivot(index='time', columns='name', values=target_col).interpolate().dropna()

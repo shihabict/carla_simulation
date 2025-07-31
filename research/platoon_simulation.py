@@ -52,7 +52,7 @@ class CarlaSimulator:
 
     def setup_simulation(self):
         settings = self.world.get_settings()
-        settings.synchronous_mode = False
+        settings.synchronous_mode = True
         # settings.synchronous_mode = False
         # settings.fixed_delta_seconds = 0.02
         # settings.max_substeps = 50
@@ -161,8 +161,8 @@ class CarlaSimulator:
         print("Starting leader-follower simulation...")
 
         speed_df = self.speed_controller.df  # Convenience alias
-        min_steps = int(simulation_start_time/self.sampling_frequency)
-        max_steps = int(simulation_end_time/self.sampling_frequency)
+        min_steps = int(simulation_start_time*self.sampling_frequency)
+        max_steps = int(simulation_end_time*self.sampling_frequency)
         print(f"Max Steps : {max_steps}")
         try:
             # for i in range(1, len(speed_df)):
@@ -175,6 +175,8 @@ class CarlaSimulator:
                 target_speed = speed_df.loc[i, 'speed_mps']
                 # print(f"Leader speed: {target_speed}")
                 self.leader_speed_buffer.append(target_speed)
+                if i>20000:
+                    print(i)
 
 
                 # --- Get current state and direction ---
@@ -274,6 +276,7 @@ class CarlaSimulator:
             print("Simulation interrupted.")
 
         finally:
+            # print(f"Value of I {i}")
             self.cleanup()
 
 
@@ -294,29 +297,29 @@ class CarlaSimulator:
                 a.destroy()
 
         settings = self.world.get_settings()
-        settings.synchronous_mode = False
+        settings.synchronous_mode = True
         settings.fixed_delta_seconds = None
         self.world.apply_settings(settings)
         # Logging and Plots
-        # self.logger.save()
+        self.logger.save()
         # self.logger.plot_trajectories()
         # self.logger.plot_speeds()
         # self.logger.plot_reference_velocity()
-        # # self.logger.plot_command_velocity()
+        # self.logger.plot_command_velocity()
         # self.logger.plot_relative_velocity()
         # self.logger.plot_gap_vs_time()
         # self.logger.plot_time_space_diagram()
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FS"
+    controller_name = "FS_IDM_nominal"
     # controller_name = "FS_IDM_nomi"
-    controller_type = "FS"
+    controller_type = "FS_IDM_nominal"
     reference_speed = 25
-    switch_time = 0
+    switch_time = 120
     simulation_start_time = 0.0
     simulation_end_time = 500.0
     # controller_type = "FS_IDM_avg_ref"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
     sim.run_asynchronously(simulation_start_time=simulation_start_time,simulation_end_time=simulation_end_time)

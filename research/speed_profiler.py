@@ -56,6 +56,9 @@ class SpeedProfileController:
         avg_interval = self.df['time_diff'].mean()
         original_rate = 1 / avg_interval if avg_interval > 0 else 50
 
+        start_time = self.df['Time'].iloc[0]
+        self.df['time'] = self.df['Time'] - start_time  # already in seconds
+
         # Compute downsampling step to match target_rate
         # step = int(round(original_rate / self.target_rate))
         # step = max(1, step)
@@ -66,6 +69,7 @@ class SpeedProfileController:
         self.df = self.df[self.df['time_diff']!=0].reset_index(drop=True)
         # self.downsample_to_10hz()
         self.upsample_to_nhz(self.sampling_frequency)
+        # self.resample_dataframe(50)
         print(0)
 
 
@@ -93,14 +97,53 @@ class SpeedProfileController:
         downsampled = downsampled.drop(columns='second').reset_index(drop=True)
         self.df = downsampled
 
-    def upsample_to_nhz(self,target_hz=0.01):
+    def resample_dataframe(self, target_freq_hz):
+
+        # Load data
+        df = self.df
+        # Resample to fixed 0.1s steps
+        # max_time = df['time'].iloc[-1]
+        # ts_uniform = np.arange(0, max_time, 1 / target_freq_hz)  # uniform resolution
+        # speed_uniform = np.interp(ts_uniform, df['time'], df['Message'])
+        # print(0)
+
+        # Assume 'Time' is in seconds or ms. Adjust as needed.
+        if 'Time' not in df.columns:
+            raise ValueError("Dataframe must contain a 'Time' column.")
+
+        # Set Time as index (convert to seconds if necessary)
+        # df['Time'] = pd.to_numeric(df['Time'])
+        # df = df.set_index('Time')
+
+        # Calculate target sampling interval (seconds)
+        target_interval = 1 / target_freq_hz
+
+        # Create a new time index based on the first and last time in the dataframe
+        # new_time_index = pd.RangeIndex(
+        #     start=df.index.min(),
+        #     stop=df.index.max(),
+        #     step=target_interval
+        # )
+        # Generate new time points (using numpy.arange to support float)
+        new_time_index = np.arange(df.index.min(), df.index.max(), target_interval)
+
+        # Reindex and interpolate (to handle both upsampling and downsampling)
+        df_resampled = df.reindex(df.index.union(new_time_index)).sort_index()
+        df_resampled = df_resampled.interpolate(method='linear').loc[new_time_index]
+
+        df_resampled=  df_resampled.reset_index().rename(columns={'index': 'Time'})
+        return df_resampled
+
+    def upsample_to_nhz(self, sampling_frequency):
         # Ensure time is sorted and normalized
+        target_interval = 1 / sampling_frequency
         self.df = self.df.sort_values(by='time_rel').reset_index(drop=True)
 
-        # Create new time grid at 100 Hz
-        new_times = np.arange(self.df['time_rel'].iloc[0],
-                              self.df['time_rel'].iloc[-1],
-                              target_hz)  # 0.01s = 100Hz
+
+        # Create a uniform time grid based on the target interval
+        start_time = self.df['time_rel'].iloc[0]
+        end_time = self.df['time_rel'].iloc[-1]
+        new_times = np.arange(start_time, end_time + target_interval, target_interval)
 
         # Initialize new DataFrame
         upsampled_df = pd.DataFrame({'time_rel': new_times})
@@ -118,7 +161,7 @@ class SpeedProfileController:
 
 if __name__ == '__main__':
     csv_path = f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv'
-    speed_profiler = SpeedProfileController(csv_path,sampling_frequency=0.02)
+    speed_profiler = SpeedProfileController(csv_path, sampling_frequency=50)
     # speed_profiler.save_processed_data()
     # speed_profiler.upsample_to_nhz(0.01)
     speed_profiler.save_processed_data()

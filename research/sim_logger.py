@@ -10,10 +10,17 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams  # Correct import
 
 # Enable LaTeX rendering
+# Plot styling
+axes_size = 26
+tick_size = 22
 rcParams["text.usetex"] = True
 rcParams["font.family"] = "serif"
-rcParams["font.serif"] = "Times"
-
+rcParams["font.serif"] = ["Times"]
+rcParams["font.size"] = tick_size
+rcParams["axes.labelsize"] = axes_size
+rcParams["xtick.labelsize"] = tick_size
+rcParams["ytick.labelsize"] = tick_size
+rcParams["legend.fontsize"] = tick_size
 from settings import BASE_DIR
 
 
@@ -22,7 +29,10 @@ class SimulationLogger:
         self.records = []
         self.controller_type = controller_type
         self.num_vehicle = num_vehicle
-        self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_FS_IDM_avg_ref_speed_nV_6_ref25_f0.02.csv"
+        if self.controller_type == "IDM":
+            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_IDM_nV_8_ref25_f0.02.csv"
+        else:
+            self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_IDM_nominal_nV_8_ref25_f50.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
@@ -60,7 +70,8 @@ class SimulationLogger:
         df = pd.DataFrame(self.records)
         os.makedirs('Reports', exist_ok=True)
         path = os.path.join('Reports', filename)
-        df.to_csv(path, index=False)
+        print(df.shape)
+        df.to_csv(path)
         print(f"[Logged] Simulation data saved to {path}")
 
     def load_data(self,filename):
@@ -112,22 +123,27 @@ class SimulationLogger:
             else:
                 plt.plot(group['time'], group['speed'], label=f"Vehicle {idx}", color=color, linewidth=1)
 
-        # Add vertical dashed line at switching time
-        switch_time = 120  # seconds
-        plt.axvline(x=switch_time, color='purple', linestyle='--', linewidth=1)
+        if self.controller_type!="IDM":
+            # Add vertical dashed line at switching time
+            switch_time = 120  # seconds
+            plt.axvline(x=switch_time, color='purple', linestyle='--', linewidth=1)
 
-        # Add text annotations
-        plt.text(switch_time - 55, plt.ylim()[1] * 0.55, "All Manual Driving",
-                 fontsize=18, ha='center', va='top', color='black')
-        plt.text(switch_time + 85, plt.ylim()[1] * 0.55, "Mixed Autonomy",
-                 fontsize=18, ha='center', va='top', color='black')
-        plt.text(switch_time + 6, plt.ylim()[1] * 0.01, "FS Activation", rotation=90, color='purple')
-        plt.title(r"\textbf{Speed Profiles Under Mixed Autonomy with FS Control}",fontsize=18)
+            # Add text annotations
+            plt.text(switch_time - 55, plt.ylim()[1] * 0.55, "All Manual Driving",
+                     fontsize=18, ha='center', va='top', color='black')
+            plt.text(switch_time + 85, plt.ylim()[1] * 0.55, "Mixed Autonomy",
+                     fontsize=18, ha='center', va='top', color='black')
+            plt.text(switch_time + 6, plt.ylim()[1] * 0.01, "FS Activation", rotation=90, color='purple', fontsize=18)
+        if self.controller_type!="IDM":
+
+            plt.title(r"\textbf{Speed Profiles Under Mixed Autonomy with FS Controller}",fontsize=20)
+        else:
+            plt.title(r"\textbf{Speed Profiles Under Fully Human-Driven Behavior (IDM)}", fontsize=20)
 
         plt.xlabel(r"\textbf{Time (s)}",fontsize=18)
         plt.ylabel(r"\textbf{Speed (m/s)}",fontsize=18)
         # plt.title(r"\textbf{Speed Over Time}")
-        plt.legend(ncol=2,fontsize=18)
+        plt.legend(loc='lower right',ncol=2,fontsize=18)
         plt.grid(True)
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
@@ -228,26 +244,27 @@ class SimulationLogger:
         print(
             f"[Plotted] Command Velocity saved to Final_Reports/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
-    def plot_gap_vs_time(self,start_time=None, end_time=None):
+    def plot_gap_vs_time(self):
         if self.records:
             df = pd.DataFrame(self.records)
         else:
             df = self.load_data(self.data_path)
         # df = pd.DataFrame(self.records)
 
-        if start_time is not None and end_time is not None:
-            lower_limit = int(start_time / 0.02)
-            upper_limit = int(end_time / 0.02)
-
-            print(f"Plotting from step {lower_limit} to {upper_limit} (time {start_time} to {end_time})")
-            df_filtered = df.iloc[lower_limit:upper_limit]
-            df = df_filtered
+        # if start_time is not None and end_time is not None:
+        #     lower_limit = int(start_time * 50)
+        #     upper_limit = int(end_time * 50)
+        #
+        #     print(f"Plotting from step {lower_limit} to {upper_limit} (time {start_time} to {end_time})")
+        #     df_filtered = df.iloc[lower_limit:upper_limit]
+        #     df = df_filtered
 
         followers = df[df['name'].str.contains('car')]
-        plt.figure(figsize=(10, 6))
-        for idx, (name, group) in enumerate(followers.groupby('name')):
+        plt.figure(figsize=(11, 7))
+        follower_groupby = followers.groupby('name')
+        for idx, (name, group) in enumerate(follower_groupby):
             color = self.custom_colors[idx % len(self.custom_colors)]
-            plt.plot(group['time'], group['gap'], label=fr'$\Delta x_{{{idx+1}}}$', color=color, linewidth=1)
+            plt.plot(group['time'], group['gap'], label=fr'$\Delta x_{{{idx+1}}}(t)$', color=color, linewidth=1)
 
         # Add vertical dashed line at switching time
         switch_time = 120  # seconds
@@ -260,11 +277,17 @@ class SimulationLogger:
                  fontsize=18, ha='center', va='top', color='black')
         plt.text(switch_time + 6, plt.ylim()[1] * 0.2, "FS Activation", rotation=90, color='purple',fontsize=18)
 
-        plt.xlabel('Time (s)',fontsize=18)
-        plt.ylabel('Space Headway (m)',fontsize=18)
-        plt.title(f'Space Headway of Follower Vehicles', fontsize=20)
+        # Axis limits
+        # if xlim[0] is not None or xlim[1] is not None:
+        #     plt.xlim(left=xlim[0], right=xlim[1])
+        # if ylim[0] is not None or ylim[1] is not None:
+        #     plt.ylim(bottom=ylim[0], top=ylim[1])
+
+        plt.xlabel(r"\textbf{Time (s)}",fontsize=18)
+        plt.ylabel(r"\textbf{Space Headway (m)}",fontsize=18)
+        plt.title(r"\textbf{Space Headway ($\Delta x$) Between Successive Vehicles Over Time}")
         plt.grid(True)
-        plt.legend(ncol=2,fontsize=18)
+        plt.legend(loc='lower right',ncol=2,fontsize=20)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
         plt.savefig(f'Final_Reports/SpaceHeadway{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf',bbox_inches='tight')
@@ -299,7 +322,7 @@ class SimulationLogger:
         plt.savefig(f'Final_Reports/acc_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
         print(f"[Plotted] Acceleration profile saved to Final_Reports/acc_vs_timeE_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
-    def plot_relative_speeds(self, x_col, y_col, title, start_time=None, end_time=None):
+    def plot_relative_speeds(self, x_col, y_col, title, switch_time=120, start_time=None, end_time=None):
 
         if self.records:
             df = pd.DataFrame(self.records)
@@ -325,19 +348,30 @@ class SimulationLogger:
         vehicle_names = sorted(pivot_df.columns, key=lambda x: (x != 'leader', x))
 
         # Plot relative speed
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(11, 7))
         for i in range(1, len(vehicle_names)):
             color = self.custom_colors[i % len(self.custom_colors)]
             leader = vehicle_names[i - 1]
             follower = vehicle_names[i]
             rel_speed = pivot_df[leader] - pivot_df[follower]
-            plt.plot(pivot_df.index, rel_speed, label=fr'$\Delta v_{{{i}}}$', color=color)
+            plt.plot(pivot_df.index, rel_speed, label=fr'$\Delta v_{{{i}}}(t)$', color=color)
 
-        plt.xlabel(x_col,fontsize=18)
-        plt.ylabel('Relative Speed (m/s)',fontsize=18)
-        plt.title(title,fontsize=20)
+        # Add vertical dashed line at switching time
+        switch_time = 120  # seconds
+        plt.axvline(x=switch_time, color='purple', linestyle='--', linewidth=1)
+
+        # Add text annotations
+        plt.text(switch_time - 85, plt.ylim()[1] * 0.85, "All Manual Driving",
+                 fontsize=18, ha='center', va='top', color='black')
+        plt.text(switch_time + 85, plt.ylim()[1] * 0.85, "Mixed Autonomy",
+                 fontsize=18, ha='center', va='top', color='black')
+        plt.text(switch_time + 6, plt.ylim()[1] * -0.7, "FS Activation", rotation=90, color='purple', fontsize=18)
+
+        plt.xlabel(r"\textbf{Time (s)}",fontsize=18)
+        plt.ylabel(r"\textbf{Relative Speed (m/s)}",fontsize=18)
+        plt.title(title)
         plt.grid(True)
-        plt.legend(ncol=2,fontsize=18)
+        plt.legend(loc='lower right',ncol=2,fontsize=20)
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
         plt.tight_layout()
@@ -407,7 +441,7 @@ class SimulationLogger:
         # Drop NaNs and keep only nonnegative times
         data = data.dropna(subset=['speed', 'pos', 'time'])
         data = data[data['time'] >= 0]
-        data['time'] = (data['time'] * 1 / freq).astype(float)  # keep as float seconds
+        # data['time'] = (data['time'] * 1 / freq).astype(float)  # keep as float seconds
 
         # Set the number of bins for the grid
         num_bins_time = 200
@@ -468,9 +502,8 @@ if __name__ == '__main__':
     controller_type = "FS_IDM"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
-    sim_logger.plot_speeds(start_time=0, end_time=2600)
-    # sim_logger.plot_reference_velocity(start_time=0, end_time=2600)
-    sim_logger.plot_gap_vs_time(start_time=0, end_time=2600)
-    sim_logger.plot_relative_speeds('time', 'speed', 'Relative Speed of Follower Vehicles', start_time=0, end_time=2600)
+    # sim_logger.plot_speeds(start_time=0, end_time=2600)
+    sim_logger.plot_gap_vs_time()
+    sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
     # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
     sim_logger.plot_spatiotemporal_heatmap( new_cmap=plt.cm.RdYlGn, freq=50, save_pdf=True)
