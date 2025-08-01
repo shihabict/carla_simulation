@@ -32,7 +32,7 @@ class SimulationLogger:
         if self.controller_type == "IDM":
             self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_IDM_nV_8_ref25_f0.02.csv"
         else:
-            self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_IDM_nominal_nV_8_ref25_f50.csv"
+            self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_IDM_avg_ref_nV_6_ref25_f0.02.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
@@ -386,7 +386,8 @@ class SimulationLogger:
         else:
             df = self.load_data(self.data_path)
 
-
+        df=df.loc[8:]
+        df['newGap'] = df['gap'] + 4.6
         x_max = df['x'].max()
         x_min = df['x'].min()
         df['x'] = x_max - df['x']
@@ -419,7 +420,7 @@ class SimulationLogger:
         plt.savefig(
             f'Final_Reports/time_space_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf', bbox_inches='tight')
 
-    def plot_spatiotemporal_heatmap(self, new_cmap, freq=50, save_pdf=False, dpi=300, save_path=None):
+    def plot_spatiotemporal_heatmap(self, new_cmap):
         if self.records:
             df = pd.DataFrame(self.records)
         else:
@@ -427,21 +428,24 @@ class SimulationLogger:
 
         x_max = df['x'].max()
         df['x'] = x_max - df['x']
-
         # Make a copy to avoid modifying original DataFrame
-        data = df.copy()
 
+        # df['time_step'] = df.index // 8
+        data = df.copy()
+        # data.drop('time', axis=1, inplace=True)
         # Rename columns to standard names
-        data = data.rename(columns={
-            'speed_mps': 'speed',
-            'x': 'pos',
-            'time_step': 'time'
-        })
+        # data = data.rename(columns={
+        #     'speed': 'speed',
+        #     'x': 'pos',
+        #     'time_step': 'time'
+        # })
+
 
         # Drop NaNs and keep only nonnegative times
-        data = data.dropna(subset=['speed', 'pos', 'time'])
-        data = data[data['time'] >= 0]
-        # data['time'] = (data['time'] * 1 / freq).astype(float)  # keep as float seconds
+        data = data.dropna(subset=['speed', 'x', 'time'])
+        dt_mean = np.mean(data['speed'])
+        # data = data[data['time'] >= 0]
+        # data['time'] = (data['time'] * 1 / 50).astype(float)  # keep as float seconds
 
         # Set the number of bins for the grid
         num_bins_time = 200
@@ -450,7 +454,7 @@ class SimulationLogger:
         # Calculate average speed in each (time, pos) bin
         h, xedges, yedges, binnumbers = scipy.stats.binned_statistic_2d(
             data['time'],
-            data['pos'],
+            data['x'],
             data['speed'],
             statistic='mean',
             bins=[num_bins_time, num_bins_pos]
@@ -468,10 +472,10 @@ class SimulationLogger:
 
         # Plot heatmap
         plt.figure(figsize=(10, 4))
-        # plt.ylim(data['pos'].min(), data['pos'].max())
+        # plt.ylim(data['x'].min(), 2000)
         # Important fix: use bin limits for axes
         plt.xlim(xedges[0], xedges[-1])
-        plt.ylim(yedges[0], yedges[-1])
+        plt.ylim(yedges[0], 1500)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
 
@@ -498,12 +502,71 @@ class SimulationLogger:
 
         plt.show()
 
+    def plot_spatiotemporal_diagram(self, start_time=None, end_time=None):
+        if self.records:
+            df = pd.DataFrame(self.records)
+        else:
+            df = self.load_data(self.data_path)
+
+        # Preprocess
+        df = df.loc[8:]
+        df['newGap'] = df['gap'] + 4.6
+        x_max = df['x'].max()
+        df['x'] = x_max - df['x']  # Flip position
+
+        # Apply time filter
+        if start_time is not None and end_time is not None:
+            lower_limit = int(start_time / 0.02)
+            upper_limit = int(end_time / 0.02)
+            df = df.iloc[lower_limit:upper_limit]
+
+        # Pivot data to create time vs position grid
+        pivot_df = df.pivot(index='time', columns='name', values='speed')
+
+        # Interpolate missing values
+        pivot_df = pivot_df.interpolate(method='linear', axis=0).fillna(0)
+
+        # Create X and Y grid (time and vehicle position index)
+        time_grid = pivot_df.index.values
+        vehicle_index = np.arange(len(pivot_df.columns))
+
+        # Build meshgrid
+        T, V = np.meshgrid(time_grid, vehicle_index)
+
+        # Values: speeds (normalize across vehicles)
+        speed_values = pivot_df.values.T  # Transpose so vehicles align with axis
+
+        # Plot heatmap
+        plt.figure(figsize=(12, 6))
+        cmap = plt.get_cmap('viridis')
+
+        plt.pcolormesh(T, V, speed_values, shading='auto', cmap=cmap)
+        plt.colorbar(label='Speed (m/s)')
+        plt.xlabel('Time (s)', fontsize=18)
+        plt.ylabel('Vehicle Index', fontsize=18)
+        plt.title('Spatiotemporal Diagram of Speeds', fontsize=20)
+        plt.xticks(fontsize=18)
+        plt.yticks(fontsize=18)
+        plt.grid(False)
+        plt.tight_layout()
+        plt.show()
+
+        # Save figure
+        plt.savefig(
+            f'Final_Reports/spatiotemporal_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
+            dpi=300, format='pdf', bbox_inches='tight'
+        )
+
+
+
+
 if __name__ == '__main__':
     controller_type = "FS_IDM"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
     # sim_logger.plot_speeds(start_time=0, end_time=2600)
-    sim_logger.plot_gap_vs_time()
-    sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
+    # sim_logger.plot_gap_vs_time()
+    # sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
     # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
-    sim_logger.plot_spatiotemporal_heatmap( new_cmap=plt.cm.RdYlGn, freq=50, save_pdf=True)
+    sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
+    # sim_logger.plot_spatiotemporal_diagram(start_time=0,end_time=500)
