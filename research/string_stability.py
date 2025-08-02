@@ -254,7 +254,7 @@ def plot_bar_with_trend_arrow(l2_violations):
     ax.set_title(r'\textbf{L2 Norm-Based Disturbance Amplification Across Vehicle Platoon}', fontsize=24)
     ax.set_xticks(x)
     ax.set_xticklabels(vehicles)
-    ax.legend(ncol=2, fontsize=24)
+    ax.legend(ncol=1,fontsize=29)
     plt.xticks(fontsize=26)
     plt.yticks(fontsize=26)
     # plt.legend(ncol=2,fontsize=24)

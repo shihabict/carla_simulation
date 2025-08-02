@@ -229,24 +229,34 @@ class FollowerVehicle:
         current_loc = self.vehicle.get_location()
         # current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
         current_wp = self.map.get_waypoint(current_loc)
+        current_yaw = self.vehicle.get_transform().rotation.yaw
+
         next_wp_list = current_wp.next(self.lookahead)
         if not next_wp_list:
             return False
 
         next_wp = next_wp_list[0]
+
+        target_yaw = next_wp_list[0].transform.rotation.yaw
+
+        yaw_error = target_yaw - current_yaw
+        yaw_error = (yaw_error + 180) % 360 - 180  # Normalize to [-180,180]
+        steer = np.clip(yaw_error / 45.0, 0.0, 0.0)
+
         target_location = next_wp.transform.location
         next_wp.transform.location.y = 0.0
         next_wp.transform.location.z = 0.0
         vec_to_wp = target_location - current_loc
 
-        steering = self.get_steer(self.vehicle.get_transform(),next_wp.transform)
+        # steering = self.get_steer(self.vehicle.get_transform(),next_wp.transform)
 
         # current_speed = self.get_speed()
         speed_error = target_speed - ego_speed
         throttle = np.clip(speed_error * 0.5, 0.0, 1.0)
         brake = 0.0
         if speed_error < -0.5:
-            brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
+            # brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
+            brake = np.clip(-speed_error, 0.0, 1.0)
             throttle = 0.0
 
         control = carla.VehicleControl()
@@ -254,12 +264,13 @@ class FollowerVehicle:
         control.brake = brake
         # control.steer = steering
         control.steer = 0.0
+        print(f"Steering control: {control.steer}")
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)
 
-        print(
-            f"IDM Update - Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Acc: {acceleration:.2f} | Target: {target_speed:.2f}")
+        # print(
+        #     f"IDM Update - Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Acc: {acceleration:.2f} | Target: {target_speed:.2f}")
 
         return target_speed, rel_speed
 
@@ -293,6 +304,7 @@ class FollowerVehicle:
         current_loc.z = 0.00
         current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
         next_wp_list = current_wp.next(self.lookahead)
+        current_yaw = self.vehicle.get_transform().rotation
         if not next_wp_list:
             return False
 
@@ -301,21 +313,27 @@ class FollowerVehicle:
         # target_location.y = 0.0
         # target_location.z = 0.0
         # vec_to_wp = target_location - current_loc
+        # target_yaw = next_wp_list[0].transform.rotation.yaw
+        #
+        # yaw_error = target_yaw - current_yaw
+        # yaw_error = (yaw_error + 180) % 360 - 180  # Normalize to [-180,180]
+        # steer = np.clip(yaw_error / 45.0, 0, 0.0)
 
         next_wp = next_wp_list[0]
         target_location = next_wp.transform.location
         next_wp.transform.location.y = 0.0
         next_wp.transform.location.z = 0.0
-        vec_to_wp = target_location - current_loc
+        # vec_to_wp = target_location - current_loc
 
-        steering = self.get_steer(self.vehicle.get_transform(), next_wp.transform)
+        # steering = self.get_steer(self.vehicle.get_transform(), next_wp.transform)
 
         current_speed = self.get_speed()
         speed_error = commanded_speed - current_speed
         throttle = np.clip(speed_error * 0.5, 0.0, 1.0)
         brake = 0.0
         if speed_error < -0.5:
-            brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
+            # brake = np.clip(-speed_error * 0.5, 0.0, 1.0)
+            brake = np.clip(-speed_error, 0.0, 1.0)
             throttle = 0.0
 
         control = carla.VehicleControl()
@@ -327,7 +345,7 @@ class FollowerVehicle:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)
 
-        print(
-            f"[FS Controller] Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Ref: {reference_speed:.2f}")
+        # print(
+        #     f"[FS Controller] Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Ref: {reference_speed:.2f}")
 
         return commanded_speed, rel_speed, quadratic_regions

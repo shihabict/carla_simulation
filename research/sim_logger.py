@@ -30,9 +30,9 @@ class SimulationLogger:
         self.controller_type = controller_type
         self.num_vehicle = num_vehicle
         if self.controller_type == "IDM":
-            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_IDM_nV_8_ref25_f0.02.csv"
+            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_with_distance_IDM.csv"
         else:
-            self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_IDM_avg_ref_nV_6_ref25_f0.02.csv"
+            self.data_path = f"{BASE_DIR}/Final_Reports/agg.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
@@ -129,10 +129,10 @@ class SimulationLogger:
             plt.axvline(x=switch_time, color='purple', linestyle='--', linewidth=1)
 
             # Add text annotations
-            plt.text(switch_time - 55, plt.ylim()[1] * 0.55, "All Manual Driving",
-                     fontsize=18, ha='center', va='top', color='black')
+            plt.text(switch_time - 55, plt.ylim()[1] * 0.55, "Manual Driving",
+                     fontsize=20, ha='center', va='top', color='black')
             plt.text(switch_time + 85, plt.ylim()[1] * 0.55, "Mixed Autonomy",
-                     fontsize=18, ha='center', va='top', color='black')
+                     fontsize=20, ha='center', va='top', color='black')
             plt.text(switch_time + 6, plt.ylim()[1] * 0.01, "FS Activation", rotation=90, color='purple', fontsize=18)
         if self.controller_type!="IDM":
 
@@ -260,7 +260,7 @@ class SimulationLogger:
         #     df = df_filtered
 
         followers = df[df['name'].str.contains('car')]
-        plt.figure(figsize=(11, 7))
+        plt.figure(figsize=(11, 6.5))
         follower_groupby = followers.groupby('name')
         for idx, (name, group) in enumerate(follower_groupby):
             color = self.custom_colors[idx % len(self.custom_colors)]
@@ -271,10 +271,10 @@ class SimulationLogger:
         plt.axvline(x=switch_time, color='purple', linestyle='--', linewidth=1)
 
         # Add text annotations
-        plt.text(switch_time - 55, plt.ylim()[1] * 0.85, "All Manual Driving",
-                 fontsize=18, ha='center', va='top', color='black')
+        plt.text(switch_time - 65, plt.ylim()[1] * 0.85, "Manual Driving",
+                 fontsize=22, ha='center', va='top', color='black')
         plt.text(switch_time + 85, plt.ylim()[1] * 0.85, "Mixed Autonomy",
-                 fontsize=18, ha='center', va='top', color='black')
+                 fontsize=22, ha='center', va='top', color='black')
         plt.text(switch_time + 6, plt.ylim()[1] * 0.2, "FS Activation", rotation=90, color='purple',fontsize=18)
 
         # Axis limits
@@ -285,11 +285,13 @@ class SimulationLogger:
 
         plt.xlabel(r"\textbf{Time (s)}",fontsize=18)
         plt.ylabel(r"\textbf{Space Headway (m)}",fontsize=18)
-        plt.title(r"\textbf{Space Headway ($\Delta x$) Between Successive Vehicles Over Time}")
+        plt.title(r"\textbf{Space Headway ($\Delta x$) Between Successive Vehicles Over Time}",fontsize=24)
+        plt.xlim(0,300)
+        plt.ylim(0,100)
         plt.grid(True)
-        plt.legend(loc='lower right',ncol=2,fontsize=20)
-        plt.xticks(fontsize=20)
-        plt.yticks(fontsize=20)
+        plt.legend(loc='lower right',ncol=2,fontsize=18)
+        plt.xticks(fontsize=24)
+        plt.yticks(fontsize=24)
         plt.savefig(f'Final_Reports/SpaceHeadway{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf',bbox_inches='tight')
 
     def plot_acceleration(self,start_time=None, end_time=None):
@@ -361,10 +363,10 @@ class SimulationLogger:
         plt.axvline(x=switch_time, color='purple', linestyle='--', linewidth=1)
 
         # Add text annotations
-        plt.text(switch_time - 85, plt.ylim()[1] * 0.85, "All Manual Driving",
-                 fontsize=18, ha='center', va='top', color='black')
+        plt.text(switch_time - 85, plt.ylim()[1] * 0.85, "Manual Driving",
+                 fontsize=20, ha='center', va='top', color='black')
         plt.text(switch_time + 85, plt.ylim()[1] * 0.85, "Mixed Autonomy",
-                 fontsize=18, ha='center', va='top', color='black')
+                 fontsize=20, ha='center', va='top', color='black')
         plt.text(switch_time + 6, plt.ylim()[1] * -0.7, "FS Activation", rotation=90, color='purple', fontsize=18)
 
         plt.xlabel(r"\textbf{Time (s)}",fontsize=18)
@@ -427,7 +429,7 @@ class SimulationLogger:
             df = self.load_data(self.data_path)
 
         x_max = df['x'].max()
-        df['x'] = x_max - df['x']
+        # df['x'] = x_max - df['x']
         # Make a copy to avoid modifying original DataFrame
 
         # df['time_step'] = df.index // 8
@@ -464,9 +466,6 @@ class SimulationLogger:
         overall_mean_speed = np.nanmean(data['speed'])
         print("Overall mean speed:", overall_mean_speed)
 
-        # Leave NaNs in h → will show as white if cmap 'bad' set
-        # h[np.isnan(h)] = overall_mean_speed  # do NOT fill
-
         # Prepare colormap with white for missing data
         cmap = new_cmap.with_extremes(bad='white')
 
@@ -475,7 +474,7 @@ class SimulationLogger:
         # plt.ylim(data['x'].min(), 2000)
         # Important fix: use bin limits for axes
         plt.xlim(xedges[0], xedges[-1])
-        plt.ylim(yedges[0], 1500)
+        plt.ylim(yedges[0], 8000)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
 
@@ -565,7 +564,7 @@ if __name__ == '__main__':
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
     # sim_logger.plot_speeds(start_time=0, end_time=2600)
-    # sim_logger.plot_gap_vs_time()
+    sim_logger.plot_gap_vs_time()
     # sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
     # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
     sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)

@@ -8,6 +8,7 @@ import time
 import numpy as np
 from carla.libcarla import Vector3D
 
+# from carla_idm_simulation.main import follower_location
 from idm_controller import IDMController
 from follower_vehicle import FollowerVehicle
 from fs_controller import FollowerStopperController
@@ -52,7 +53,7 @@ class CarlaSimulator:
 
     def setup_simulation(self):
         settings = self.world.get_settings()
-        settings.synchronous_mode = True
+        settings.synchronous_mode = False
         # settings.synchronous_mode = False
         # settings.fixed_delta_seconds = 0.02
         # settings.max_substeps = 50
@@ -175,8 +176,8 @@ class CarlaSimulator:
                 target_speed = speed_df.loc[i, 'speed_mps']
                 # print(f"Leader speed: {target_speed}")
                 self.leader_speed_buffer.append(target_speed)
-                if i>20000:
-                    print(i)
+                # if i>20000:
+                #     print(i)
 
 
                 # --- Get current state and direction ---
@@ -206,6 +207,7 @@ class CarlaSimulator:
                 current_speed_mps = np.linalg.norm([current_speed.x])
                 speed_error = target_speed - current_speed_mps
                 self.leader.get_transform().location.y = 0.0
+                # print(f"Leader Position in x axis - {self.leader.get_transform().location.x}")
 
                 throttle = np.clip(speed_error * 0.5, 0.0, 1.0)  # Proportional control
                 brake = 0.0
@@ -263,10 +265,13 @@ class CarlaSimulator:
                                         location=follower.vehicle.get_location(),
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
                                         gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
+                    # if j == 6:
+                    #     print(f'last follower position in x axis : {follower.vehicle.get_transform().location.x}')
+                    #     print(f"----------------------------------------------------------------------------------------")
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
-                cam_transform = last_follower.get_transform().transform(carla.Location(x=-10, y=-4, z=20))
+                cam_transform = last_follower.get_transform().transform(carla.Location(x=-10, z=15))
                 self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
 
                 # Sync CARLA to time step
@@ -312,11 +317,11 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FS_IDM_nominal"
+    controller_name = "FS_IDM_test"
     # controller_name = "FS_IDM_nomi"
-    controller_type = "FS_IDM_nominal"
+    controller_type = "FS_IDM_test"
     reference_speed = 25
-    switch_time = 120
+    switch_time = None
     simulation_start_time = 0.0
     simulation_end_time = 500.0
     # controller_type = "FS_IDM_avg_ref"
