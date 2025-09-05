@@ -32,7 +32,7 @@ class SimulationLogger:
         if self.controller_type == "IDM":
             self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_with_distance_IDM.csv"
         else:
-            self.data_path = f"{BASE_DIR}/Final_Reports/agg.csv"
+            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_FsIdmTesting2_nV_8_ref25_f50.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
@@ -289,7 +289,7 @@ class SimulationLogger:
         plt.xlim(0,300)
         plt.ylim(0,100)
         plt.grid(True)
-        plt.legend(loc='lower right',ncol=2,fontsize=18)
+        plt.legend(loc='upper right',ncol=2,fontsize=18)
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
         plt.savefig(f'Final_Reports/SpaceHeadway{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf',bbox_inches='tight')
@@ -560,12 +560,12 @@ class SimulationLogger:
 
 
 if __name__ == '__main__':
-    controller_type = "FS_IDM"
+    controller_type = "FsIdmTesting2"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
-    # sim_logger.plot_speeds(start_time=0, end_time=2600)
+    sim_logger.plot_speeds(start_time=0, end_time=2600)
     sim_logger.plot_gap_vs_time()
     # sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
-    # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
+    sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
     sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
     # sim_logger.plot_spatiotemporal_diagram(start_time=0,end_time=500)
