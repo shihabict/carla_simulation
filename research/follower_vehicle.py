@@ -66,6 +66,10 @@ class FollowerVehicle:
         return steer
 
     def update_idm(self):
+        # follower_transform = self.vehicle.get_transform()
+        # follower_transform.location.y = 0.0
+        # follower_transform.location.z = 0.0
+        # self.vehicle.set_transform(follower_transform)
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
@@ -122,7 +126,7 @@ class FollowerVehicle:
         control.brake = brake
         # control.steer = steering
         control.steer = 0.0
-        print(f"Steering control: {control.steer}")
+        # print(f"Steering control: {control.steer}")
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)
@@ -133,6 +137,12 @@ class FollowerVehicle:
         return target_speed, rel_speed
 
     def update_fs(self,reference_speed):
+
+        # follower_transform = self.vehicle.get_transform()
+        # follower_transform.location.y = 0.0
+        # follower_transform.location.z = 0.0
+        # self.vehicle.set_transform(follower_transform)
+
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
