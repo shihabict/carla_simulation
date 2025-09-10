@@ -47,11 +47,7 @@ class CarlaSimulator:
     def setup_simulation(self):
         settings = self.world.get_settings()
         settings.synchronous_mode = True
-        # settings.synchronous_mode = False
         settings.fixed_delta_seconds = 0.02
-        # settings.max_substeps = 50
-        # settings.fixed_delta_seconds = 0.01
-        # self.delta_t = settings.fixed_delta_seconds
         self.world.apply_settings(settings)
 
     def spawn_vehicle(self, blueprint_name, spawn_transform):
@@ -64,6 +60,13 @@ class CarlaSimulator:
         vehicle = self.world.try_spawn_actor(bp, spawn_transform)
         return vehicle
 
+    def get_vehicle_length(self,vehicle):
+        # Assuming 'vehicle' is a CARLA actor object
+        vehicle_extent = vehicle.bounding_box.extent
+        vehicle_length = vehicle_extent.x * 2
+        # print(f"Vehicle length: {vehicle_length} meters")
+        return vehicle_length
+
     def spawn_leader_and_followers(self):
         spawn_points = self.map.get_spawn_points()
         base_spawn = random.choice(spawn_points)
@@ -73,9 +76,13 @@ class CarlaSimulator:
         base_spawn.location.x -= 500
         base_spawn.location.y = 0.00
         self.leader = self.spawn_vehicle(leader_bp, base_spawn)
+
+
         if not self.leader:
             raise RuntimeError("Failed to spawn leader vehicle.")
-        print("[Leader Spawned]")
+
+        leader_length = self.get_vehicle_length(self.leader)
+        print(f" Leader Spawned and Length is {leader_length} ")
 
         # Spawn Followers (8 meters apart behind the leader)
         idm_controller = IDMController()
@@ -83,7 +90,7 @@ class CarlaSimulator:
 
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
-            offset_distance = (i + 1) * 8.6
+            offset_distance = (i + 1) * 10
             base_spawn.location.y = 0.00
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
@@ -92,7 +99,9 @@ class CarlaSimulator:
             vehicle = self.spawn_vehicle(follower_bp, follower_transform)
             if not vehicle:
                 raise RuntimeError(f"Failed to spawn follower {i}.")
-            print(f"[Follower {i} Spawned]")
+
+            follower_length = self.get_vehicle_length(vehicle)
+            print(f"[Follower {i} Spawned and length is {follower_length}]")
 
             # Attach both controllers
 
@@ -125,11 +134,6 @@ class CarlaSimulator:
                 if direction_vector is None:
                     print("Leader has no more waypoints.")
                     break
-
-                # leader_transform = self.leader.get_transform()
-                # leader_transform.location.y=0
-                # leader_transform.location.z=0
-                # self.leader.set_transform(leader_transform)
 
                 # --- Compute throttle ---
                 current_speed = self.leader.get_velocity()
@@ -192,27 +196,12 @@ class CarlaSimulator:
                         command_velocity, rel_speed = follower.update_idm()
                         ref_velocity = 0
 
-                        # # Use IDM controller before switch_time
-                        # result = follower.update_idm()  # Pass delta_t parameter
-                        # if result and len(result) == 2:  # Check if result is valid tuple
-                        #     command_velocity, rel_speed = result
-                        # else:
-                        #     print(f"Warning: Invalid IDM result for follower {j}: {result}")
-                        #     command_velocity, rel_speed = 0.0, 0.0
-
-                        # ref_velocity = 0
-
                         gap, leader_speed = follower.compute_gap_and_leader_speed()
                         self.logger.log(sim_time=sim_time, name=f'car{j+1}',
                                         location=follower.vehicle.get_location(),
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
                                         gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
                         print(f"IDM - {command_velocity} - position - {follower.vehicle.get_location().y} - Time {sim_time} - Label - car{j+1}")
-                    # follower_transform = follower.vehicle.get_transform()
-                    # follower_transform.location.y = 0.0
-                    # follower_transform.location.z = 0.0
-                    # follower.vehicle.set_transform(follower_transform)
-                    # print(0)
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
@@ -262,9 +251,9 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FsIdmTesting2"
+    controller_name = "FsIdmTesting3"
     # controller_name = "FS_IDM_nomi"
-    controller_type = "FsIdmTesting2"
+    controller_type = controller_name
     reference_speed = 25
     switch_time = 120
     simulation_start_time = 0.0

@@ -32,7 +32,7 @@ class SimulationLogger:
         if self.controller_type == "IDM":
             self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_with_distance_IDM.csv"
         else:
-            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_FsIdmTesting2_nV_8_ref25_f50.csv"
+            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_FsIdmTesting3_nV_8_ref25_f50.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
@@ -556,11 +556,8 @@ class SimulationLogger:
             dpi=300, format='pdf', bbox_inches='tight'
         )
 
-
-
-
 if __name__ == '__main__':
-    controller_type = "FsIdmTesting2"
+    controller_type = "FsIdmTesting3"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
     sim_logger.plot_speeds(start_time=0, end_time=2600)

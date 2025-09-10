@@ -11,7 +11,7 @@ class FollowerVehicle:
         self.map = map_ref
         self.leader = leader_vehicle
         self.lookahead = waypoint_lookahead
-        self.vehicle_length = 4.6
+        self.vehicle_length = 4.79
         self.reference_speed = reference_speed
 
         # Controllers
@@ -32,12 +32,13 @@ class FollowerVehicle:
     def compute_gap_and_leader_speed(self):
         ego_loc = self.vehicle.get_location()
         leader_loc = self.leader.get_location()
-        gap = ego_loc.distance(leader_loc)
+        # gap = ego_loc.distance(leader_loc)
+        gap = leader_loc.distance(ego_loc)
 
         lead_velocity = self.leader.get_velocity()
         lead_speed = np.linalg.norm([lead_velocity.x,lead_velocity.y])
-        if gap>self.vehicle_length:
-            gap = gap - self.vehicle_length
+        # if gap>self.vehicle_length:
+        gap = gap - self.vehicle_length
 
         return gap, lead_speed
 
