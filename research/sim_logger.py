@@ -30,9 +30,9 @@ class SimulationLogger:
         self.controller_type = controller_type
         self.num_vehicle = num_vehicle
         if self.controller_type == "IDM":
-            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_with_distance_IDM.csv"
+            self.data_path = f"{BASE_DIR}/Reports/sim_data_with_distance_IDM.csv"
         else:
-            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_FsIdmTesting3_nV_8_ref25_f50.csv"
+            self.data_path = f"{BASE_DIR}/Reports/sim_data_FsIdmTesting6_nV_8_ref25_f50.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time

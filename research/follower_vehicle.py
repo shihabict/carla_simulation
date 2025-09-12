@@ -32,8 +32,8 @@ class FollowerVehicle:
     def compute_gap_and_leader_speed(self):
         ego_loc = self.vehicle.get_location()
         leader_loc = self.leader.get_location()
-        # gap = ego_loc.distance(leader_loc)
-        gap = leader_loc.distance(ego_loc)
+        gap = ego_loc.distance(leader_loc)
+        # gap = leader_loc.distance(ego_loc)
 
         lead_velocity = self.leader.get_velocity()
         lead_speed = np.linalg.norm([lead_velocity.x,lead_velocity.y])
@@ -131,11 +131,12 @@ class FollowerVehicle:
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)
+        vehicle_location = self.vehicle.get_location()
 
         # print(
-        #     f"IDM Update - Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Acc: {acceleration:.2f} | Target: {target_speed:.2f}")
+        #     f"[IDM Controller] Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Ref: {reference_speed:.2f}")
 
-        return target_speed, rel_speed
+        return target_speed, gap, vehicle_location, rel_speed
 
     def update_fs(self,reference_speed):
 
@@ -189,8 +190,9 @@ class FollowerVehicle:
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)
+        vehicle_location = self.vehicle.get_location()
 
         # print(
         #     f"[FS Controller] Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Ref: {reference_speed:.2f}")
 
-        return commanded_speed, rel_speed, quadratic_regions
+        return commanded_speed,gap,vehicle_location, rel_speed
