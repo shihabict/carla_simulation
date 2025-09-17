@@ -1,5 +1,3 @@
-import time
-
 import carla
 import random
 import numpy as np
@@ -53,12 +51,13 @@ class CarlaSimulator:
     def spawn_vehicle(self, blueprint_name, spawn_transform):
         bp = self.bp_lib.find(blueprint_name)
         vehicle = self.world.try_spawn_actor(bp, spawn_transform)
+        # Add this after spawning each vehicle:
+        physics_control = vehicle.get_physics_control()
+        physics_control.use_sweep_wheel_collision = True
+        vehicle.apply_physics_control(physics_control)
         return vehicle
 
-    def spawn_vehicle(self, blueprint_name, spawn_transform):
-        bp = self.bp_lib.find(blueprint_name)
-        vehicle = self.world.try_spawn_actor(bp, spawn_transform)
-        return vehicle
+
 
     def get_vehicle_length(self,vehicle):
         # Assuming 'vehicle' is a CARLA actor object
@@ -75,7 +74,9 @@ class CarlaSimulator:
         leader_bp = 'vehicle.lincoln.mkz_2020'
         base_spawn.location.x -= 500
         base_spawn.location.y = 0.00
+        # base_spawn.rotation.yaw = 10.00
         self.leader = self.spawn_vehicle(leader_bp, base_spawn)
+
 
 
         if not self.leader:
@@ -92,10 +93,13 @@ class CarlaSimulator:
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
             offset_distance = (i + 1) * 9
             base_spawn.location.y = 0.00
+            # base_spawn.rotation.yaw = 10.00
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
-            follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.tesla.model3'
+            # follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.tesla.model3'
+            # follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.toyota.prius'
+            follower_bp = 'vehicle.toyota.prius'
             vehicle = self.spawn_vehicle(follower_bp, follower_transform)
             if not vehicle:
                 raise RuntimeError(f"Failed to spawn follower {i}.")
@@ -110,6 +114,12 @@ class CarlaSimulator:
             self.followers.append(follower)
             previous_vehicle = vehicle
 
+    def compute_lateral_control(self, vehicle, target_y=-1.75):
+        current_y = vehicle.get_location().y
+        y_error = target_y - current_y
+        # Simple proportional control
+        steer = np.clip(y_error * 0.1, -0.3, 0.3)  # Limit steering
+        return steer
 
     def run_synchronously(self, simulation_start_time, simulation_end_time):
         self.setup_simulation()
@@ -128,17 +138,17 @@ class CarlaSimulator:
                 delta_t = 0.02
                 target_speed = speed_df.loc[i, 'speed_mps']
                 self.leader_speed_buffer.append(target_speed)
-                if sim_time > 5:
-                    leader_transform = self.leader.get_transform()
-                    leader_transform.location.y = 0.0
-                    leader_transform.location.z = 0.05
-                    self.leader.set_transform(leader_transform)
 
                 # --- Get current state and direction ---
                 direction_vector, next_wp = self.get_direction_to_next_wp(self.leader)
                 if direction_vector is None:
                     print("Leader has no more waypoints.")
                     break
+
+                # leader_transform = self.leader.get_transform()
+                # leader_transform.location.y = 0.0
+                # leader_transform.rotation.yaw = 0.0  # Add this line to control yaw
+                # self.leader.set_transform(leader_transform)
 
                 # --- Compute throttle ---
                 current_speed = self.leader.get_velocity()
@@ -166,15 +176,7 @@ class CarlaSimulator:
 
                 # --- Followers control ---
                 # previous_leader_vel = velocity
-                # if i > 103:
                 for j, follower in enumerate(self.followers):
-
-                    if sim_time>5:
-                        follower_transform = follower.vehicle.get_transform()
-                        follower_transform.location.y = 0.0
-                        follower_transform.location.z = 0.05
-                        follower.vehicle.set_transform(follower_transform)
-
                     # update the logic to switch between controllers
 
                     if self.switch_time == 0:
@@ -260,10 +262,11 @@ if __name__ == '__main__':
     # controller_name = "FS_IDM_nomi"
     controller_type = controller_name
     reference_speed = 25
-    switch_time = 120
+    switch_time = 20
     simulation_start_time = 0.0
     simulation_end_time = 300.0
     # controller_type = "FS_IDM_avg_ref"
-    custom_map_path = f'{ROOT_DIR}/routes/road_crosswork.xodr'
+    # custom_map_path = f'{ROOT_DIR}/routes/road_crosswork.xodr'
+    custom_map_path = f'{ROOT_DIR}/routes/longRoad.xodr'
     sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
     sim.run_synchronously(simulation_start_time=simulation_start_time, simulation_end_time=simulation_end_time)

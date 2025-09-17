@@ -37,10 +37,17 @@ class FollowerVehicle:
 
         lead_velocity = self.leader.get_velocity()
         lead_speed = np.linalg.norm([lead_velocity.x,lead_velocity.y])
-        # if gap>self.vehicle_length:
-        gap = gap - self.vehicle_length
+        if gap>self.vehicle_length:
+            gap = gap - self.vehicle_length
 
         return gap, lead_speed
+
+    def compute_lateral_control(self, vehicle, target_y=0.0):
+        current_y = vehicle.get_location().y
+        y_error = target_y - current_y
+        # Simple proportional control
+        steer = np.clip(y_error * 0.1, -0.2, 0.2)  # Limit steering
+        return steer
 
     def get_steer(self, vehicle_transform, waypoint_transform):
         """
@@ -107,9 +114,9 @@ class FollowerVehicle:
         steer = np.clip(yaw_error / 45.0, 0.0, 0.0)
 
         target_location = next_wp.transform.location
-        next_wp.transform.location.y = 0.0
-        next_wp.transform.location.z = 0.0
-        vec_to_wp = target_location - current_loc
+        # next_wp.transform.location.y = 0.0
+        # next_wp.transform.location.z = 0.0
+        # vec_to_wp = target_location - current_loc
 
         # steering = self.get_steer(self.vehicle.get_transform(),next_wp.transform)
 
@@ -125,8 +132,8 @@ class FollowerVehicle:
         control = carla.VehicleControl()
         control.throttle = throttle
         control.brake = brake
-        # control.steer = steering
         control.steer = 0.0
+        # control.steer = self.compute_lateral_control(self.leader)
         # print(f"Steering control: {control.steer}")
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
@@ -157,8 +164,8 @@ class FollowerVehicle:
         )
 
         current_loc = self.vehicle.get_location()
-        current_loc.y = 0.00
-        current_loc.z = 0.00
+        # current_loc.y = 0.00
+        # current_loc.z = 0.00
         current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
         next_wp_list = current_wp.next(self.lookahead)
         current_yaw = self.vehicle.get_transform().rotation
@@ -167,8 +174,8 @@ class FollowerVehicle:
 
         next_wp = next_wp_list[0]
         target_location = next_wp.transform.location
-        next_wp.transform.location.y = 0.0
-        next_wp.transform.location.z = 0.0
+        # next_wp.transform.location.y = 0.0
+        # next_wp.transform.location.z = 0.0
         # vec_to_wp = target_location - current_loc
 
         # steering = self.get_steer(self.vehicle.get_transform(), next_wp.transform)
@@ -185,8 +192,8 @@ class FollowerVehicle:
         control = carla.VehicleControl()
         control.throttle = throttle
         control.brake = brake
+        # control.steer = self.compute_lateral_control(self.leader)
         control.steer = 0.0
-        # control.steer = steering
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)
