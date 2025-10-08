@@ -52,9 +52,10 @@ class CarlaSimulator:
         bp = self.bp_lib.find(blueprint_name)
         vehicle = self.world.try_spawn_actor(bp, spawn_transform)
         # Add this after spawning each vehicle:
-        physics_control = vehicle.get_physics_control()
-        physics_control.use_sweep_wheel_collision = True
-        vehicle.apply_physics_control(physics_control)
+        # physics_control = vehicle.get_physics_control()
+        # physics_control.use_sweep_wheel_collision = True
+        # physics_control.
+        # vehicle.apply_physics_control(physics_control)
         return vehicle
 
 
@@ -73,11 +74,9 @@ class CarlaSimulator:
         # Spawn Leader
         leader_bp = 'vehicle.lincoln.mkz_2020'
         base_spawn.location.x -= 500
-        base_spawn.location.y = 0.00
+        # base_spawn.location.y = 0.00
         # base_spawn.rotation.yaw = 10.00
         self.leader = self.spawn_vehicle(leader_bp, base_spawn)
-
-
 
         if not self.leader:
             raise RuntimeError("Failed to spawn leader vehicle.")
@@ -91,15 +90,15 @@ class CarlaSimulator:
 
         previous_vehicle = self.leader
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
-            offset_distance = (i + 1) * 9
+            offset_distance = (i + 1) * 8
             base_spawn.location.y = 0.00
             # base_spawn.rotation.yaw = 10.00
             offset_location = base_spawn.location + carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
-            # follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.tesla.model3'
+            follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.tesla.model3'
             # follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.toyota.prius'
-            follower_bp = 'vehicle.toyota.prius'
+            # follower_bp = 'vehicle.toyota.prius'
             vehicle = self.spawn_vehicle(follower_bp, follower_transform)
             if not vehicle:
                 raise RuntimeError(f"Failed to spawn follower {i}.")
@@ -176,8 +175,18 @@ class CarlaSimulator:
 
                 # --- Followers control ---
                 # previous_leader_vel = velocity
+                leader_y_position = self.leader.get_location().y
                 for j, follower in enumerate(self.followers):
                     # update the logic to switch between controllers
+
+                    # follower_y_transform = follower.vehicle.get_transform()
+                    # follower_y_transform.location.y = leader_y_position
+                    # follower.vehicle.set_transform(follower_y_transform)
+
+                    # follower_transform = self.vehicle.get_transform()
+                    # follower_transform.location.y = 0.0
+                    # follower_transform.location.z = 0.0
+                    # self.vehicle.set_transform(follower_transform)
 
                     if self.switch_time == 0:
                         latest_leader_speed = self.leader_speed_buffer[-200:]
@@ -209,6 +218,8 @@ class CarlaSimulator:
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
                                         gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
                         print(f"IDM - {command_velocity} - position - {vehicle_location.x} - Time {sim_time} - Label - car{j+1}")
+                    leader_y_position = follower.vehicle.get_location().y
+
 
                 # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
@@ -263,10 +274,10 @@ if __name__ == '__main__':
     controller_type = controller_name
     reference_speed = 25
     switch_time = 20
-    simulation_start_time = 0.0
-    simulation_end_time = 300.0
+    simulation_start_time = 100.0
+    simulation_end_time = 500.0
     # controller_type = "FS_IDM_avg_ref"
-    # custom_map_path = f'{ROOT_DIR}/routes/road_crosswork.xodr'
+    # custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     custom_map_path = f'{ROOT_DIR}/routes/longRoad.xodr'
     sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
     sim.run_synchronously(simulation_start_time=simulation_start_time, simulation_end_time=simulation_end_time)

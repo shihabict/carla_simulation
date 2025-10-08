@@ -305,11 +305,11 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FS"
+    controller_name = "FSIDMV2"
     reference_speed = 25
-    switch_time = None
-    simulation_start_time = 200.0
-    simulation_end_time = 1000.0
+    switch_time = 120
+    simulation_start_time = 0.0
+    simulation_end_time = 500.0
     controller_type = "FS"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=2, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)

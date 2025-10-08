@@ -2,3 +2,5 @@
 pygame>=2.6.1
 matplotlib>=3.9.4
 pandas>=2.3.0
+opencv-python
+scipy
