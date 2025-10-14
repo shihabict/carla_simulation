@@ -1,9 +1,14 @@
 # In your CARLA Python script:
 # from carla import OpenDriveParser
 import carla
+
+from research.utils import draw_route_plan
+
 xodr_file = "../routes/clean_road.xodr"
 with open(xodr_file, 'r') as f:
     opendrive_data = f.read()
+
+
 
 client = carla.Client('localhost', 2000)
 client.set_timeout(10.0)
@@ -22,3 +27,12 @@ world = client.generate_opendrive_world(
         enable_mesh_visibility=True
     )
 )
+spawn_points = world.get_map().get_spawn_points()
+#get the map
+map = world.get_map()
+roads = map.get_topology()
+print(len(roads))
+# get waypoints
+map.get_waypoints()
+
+draw_route_plan(map, world, spawn_points)

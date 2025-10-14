@@ -165,3 +165,23 @@ class CustomVector3D:
 def truncate_float(number, digits=3):
     factor = 10.0 ** digits
     return int(number * factor) / factor
+
+# draw road waypoints
+# import some code coming with the sim
+
+def draw_route_plan(map, world, spawn_points):
+    import sys
+    sys.path.append('/home/paridhi/Downloads/CARLA_0.9.15/PythonAPI/carla')
+    from agents.navigation.global_route_planner import GlobalRoutePlanner
+    smapling_resolution = 2.0  # meters
+    grp = GlobalRoutePlanner(map, smapling_resolution)
+
+    str_point = carla.Location(x=100, y=0, z=0)
+    end_point = carla.Location(x=str_point.x+500 , y=str_point.y  , z=str_point.z)
+
+    route = grp.trace_route(str_point, end_point)
+
+    for waypoint in route:
+        world.debug.draw_string(waypoint[0].transform.location, '-', draw_shadow=False,
+                                color=carla.Color(r=0, g=0, b=255), life_time=120.0,
+                                persistent_lines=True)

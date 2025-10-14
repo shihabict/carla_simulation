@@ -1,3 +1,5 @@
+import time
+
 import carla
 import random
 import numpy as np
@@ -78,6 +80,7 @@ class CarlaSimulator:
         # base_spawn.rotation.yaw = 10.00
         self.leader = self.spawn_vehicle(leader_bp, base_spawn)
 
+
         if not self.leader:
             raise RuntimeError("Failed to spawn leader vehicle.")
 
@@ -112,6 +115,9 @@ class CarlaSimulator:
 
             self.followers.append(follower)
             previous_vehicle = vehicle
+            vehicle.set_transform(follower_transform)
+
+
 
     def compute_lateral_control(self, vehicle, target_y=-1.75):
         current_y = vehicle.get_location().y
@@ -134,7 +140,6 @@ class CarlaSimulator:
             for i in range(min_steps, max_steps):
                 # Step-specific timing and speed
                 sim_time = speed_df.loc[i, 'time_rel']
-                delta_t = 0.02
                 target_speed = speed_df.loc[i, 'speed_mps']
                 self.leader_speed_buffer.append(target_speed)
 
@@ -177,16 +182,6 @@ class CarlaSimulator:
                 # previous_leader_vel = velocity
                 leader_y_position = self.leader.get_location().y
                 for j, follower in enumerate(self.followers):
-                    # update the logic to switch between controllers
-
-                    # follower_y_transform = follower.vehicle.get_transform()
-                    # follower_y_transform.location.y = leader_y_position
-                    # follower.vehicle.set_transform(follower_y_transform)
-
-                    # follower_transform = self.vehicle.get_transform()
-                    # follower_transform.location.y = 0.0
-                    # follower_transform.location.z = 0.0
-                    # self.vehicle.set_transform(follower_transform)
 
                     if self.switch_time == 0:
                         latest_leader_speed = self.leader_speed_buffer[-200:]
@@ -221,7 +216,7 @@ class CarlaSimulator:
                     leader_y_position = follower.vehicle.get_location().y
 
 
-                # --- Spectator follows last follower ---
+                # # --- Spectator follows last follower ---
                 last_follower = self.followers[-1].vehicle
                 cam_transform = last_follower.get_transform().transform(carla.Location(x=-10, z=15))
                 self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
@@ -274,7 +269,7 @@ if __name__ == '__main__':
     controller_type = controller_name
     reference_speed = 25
     switch_time = 20
-    simulation_start_time = 100.0
+    simulation_start_time = 0.0
     simulation_end_time = 500.0
     # controller_type = "FS_IDM_avg_ref"
     # custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
