@@ -3,6 +3,8 @@ import carla
 import numpy as np
 from collections import deque
 from nominal_contoller import NominalController
+from research.pid_controller import LaneCenteringController
+
 
 class FollowerVehicle:
     def __init__(self, vehicle_actor: carla.Vehicle, map_ref: carla.Map,
@@ -23,6 +25,9 @@ class FollowerVehicle:
 
         # New: Leader speed buffer (rolling window of last 200 values)
         self.leader_speed_buffer = deque(maxlen=200)
+
+        self.previous_y_error = 0.0
+        self.previous_steer = 0.0
 
 
     def get_speed(self):
@@ -74,10 +79,10 @@ class FollowerVehicle:
         return steer
 
     def update_idm(self):
-        # follower_transform = self.vehicle.get_transform()
-        # follower_transform.location.y = 0.0
-        # follower_transform.location.z = 0.0
-        # self.vehicle.set_transform(follower_transform)
+
+
+
+
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
@@ -85,10 +90,7 @@ class FollowerVehicle:
         # self.leader_speed_buffer.append(lead_speed)
 
         acceleration = self.idm_controller.compute_acceleration(ego_speed, lead_speed, gap)
-        # acceleration = max(1.5,acceleration)
-        # More aggressive acceleration when far behind
-        # if gap > 20 and lead_speed > ego_speed:
-        #     acceleration = min(acceleration * 1.5, self.idm_controller.a_max)
+
 
         # 3. Gentle restart logic (fixes stuck ego when leader is far and moving)
         if ego_speed < 0.1 and gap > self.idm_controller.s0 and lead_speed > 1.0:
@@ -96,29 +98,7 @@ class FollowerVehicle:
 
         target_speed = max(0.0, ego_speed + acceleration * 1)
 
-        # current_loc = self.vehicle.get_location()
-        # # current_wp = self.map.get_waypoint(current_loc, project_to_road=True)
-        # current_wp = self.map.get_waypoint(current_loc)
-        # current_yaw = self.vehicle.get_transform().rotation.yaw
-        #
-        # next_wp_list = current_wp.next(self.lookahead)
-        # if not next_wp_list:
-        #     return False
-        #
-        # next_wp = next_wp_list[0]
-        #
-        # target_yaw = next_wp_list[0].transform.rotation.yaw
-        #
-        # yaw_error = target_yaw - current_yaw
-        # yaw_error = (yaw_error + 180) % 360 - 180  # Normalize to [-180,180]
-        # steer = np.clip(yaw_error / 45.0, 0.0, 0.0)
 
-        # target_location = next_wp.transform.location
-        # next_wp.transform.location.y = 0.0
-        # next_wp.transform.location.z = 0.0
-        # vec_to_wp = target_location - current_loc
-
-        # steering = self.get_steer(self.vehicle.get_transform(),next_wp.transform)
 
         # current_speed = self.get_speed()
         speed_error = target_speed - ego_speed
@@ -129,18 +109,50 @@ class FollowerVehicle:
             brake = np.clip(-speed_error, 0.0, 1.0)
             throttle = 0.0
 
-        # Lateral control for lane keeping
+        # # Lateral control for lane keeping
+        # current_y = self.vehicle.get_location().y
+        # target_y = 1.75 # Lane center
+        # y_error = target_y - current_y
+        #
+        # # Proportional steering control
+        # if y_error!=0:
+        #     steer = np.clip(y_error * 0.2, -0.01, 0.01)  # Gentle steering
+        # else:
+        #     steer = 0.0
+
         current_y = self.vehicle.get_location().y
-        target_y = -1.75 # Lane center
+        target_y = -1.75
         y_error = target_y - current_y
 
-        # Proportional steering control
-        steer = np.clip(y_error * 0.2, -0.1, 0.1)  # Gentle steering
+        # Dead zone
+        if abs(y_error) < 0.05:
+            y_error = 0.0
+
+        # Derivative term (prevents oscillation)
+        y_error_rate = (y_error - self.previous_y_error)
+
+        # PD control
+        steer_raw = 0.3 * y_error - 0.5 * y_error_rate
+
+        # Smooth filter
+        steer = 0.3 * steer_raw + 0.7 * self.previous_steer
+
+        # Better limits
+        steer = np.clip(steer, -0.3, 0.3)
+
+        # Remember for next iteration
+        self.previous_y_error = y_error
+        self.previous_steer = steer
+
 
         control = carla.VehicleControl()
         control.throttle = throttle
         control.brake = brake
-        control.steer = 0.0
+        if 0<ego_speed<10:
+            steer = 0.0
+            self.previous_steer = 0.0
+            self.previous_y_error = 0.0
+        control.steer = steer
         # control.steer = self.compute_lateral_control(self.leader)
         # print(f"Steering control: {control.steer}")
         if control.steer > 0.0:
@@ -154,11 +166,6 @@ class FollowerVehicle:
         return target_speed, gap, vehicle_location, rel_speed
 
     def update_fs(self,reference_speed):
-
-        # follower_transform = self.vehicle.get_transform()
-        # follower_transform.location.y = 0.0
-        # follower_transform.location.z = 0.0
-        # self.vehicle.set_transform(follower_transform)
 
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
@@ -180,14 +187,6 @@ class FollowerVehicle:
         if not next_wp_list:
             return False
 
-        next_wp = next_wp_list[0]
-        target_location = next_wp.transform.location
-        next_wp.transform.location.y = 0.0
-        next_wp.transform.location.z = 0.0
-        vec_to_wp = target_location - current_loc
-
-        steering = self.get_steer(self.vehicle.get_transform(), next_wp.transform)
-
         current_speed = self.get_speed()
         speed_error = commanded_speed - current_speed
         throttle = np.clip(speed_error * 0.5, 0.0, 1.0)
@@ -197,11 +196,58 @@ class FollowerVehicle:
             brake = np.clip(-speed_error, 0.0, 1.0)
             throttle = 0.0
 
+        # # Lateral control for lane keeping
+        # current_y = self.vehicle.get_location().y
+        # target_y = 1.75  # Lane center
+        # y_error = target_y - current_y
+        #
+        # # Proportional steering control
+        # if y_error != 0:
+        #     steer = np.clip(y_error * 0.2, -0.1, 0.1)  # Gentle steering
+        # else:
+        #     steer = 0.0
+
+        current_wp = self.map.get_waypoint(self.vehicle.get_location(), project_to_road=True)
+        lane_width = current_wp.lane_width
+        target_y = -lane_width / 2  # Negative because lane id is -1
+
+        print(f"Lane width: {lane_width}m, Target Y: {target_y}m")
+
+        current_y = self.vehicle.get_location().y
+        target_y = 1.75
+        y_error = target_y - current_y
+
+        # Dead zone
+        if abs(y_error) < 0.05:
+            y_error = 0.0
+
+        # Derivative term (prevents oscillation)
+        y_error_rate = (y_error - self.previous_y_error)
+
+        # PD control
+        steer_raw = 0.3 * y_error - 0.5 * y_error_rate
+
+        # Smooth filter
+        steer = 0.3 * steer_raw + 0.7 * self.previous_steer
+
+        # Better limits
+        steer = np.clip(steer, -0.5, 0.5)
+
+        # Remember for next iteration
+        self.previous_y_error = y_error
+        self.previous_steer = steer
+
         control = carla.VehicleControl()
         control.throttle = throttle
         control.brake = brake
         # control.steer = self.compute_lateral_control(self.leader)
-        control.steer = steering
+
+        if 0<ego_speed<10:
+            steer = 0.0
+            self.previous_steer = 0.0
+            self.previous_y_error = 0.0
+
+        control.steer = steer
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
         self.vehicle.apply_control(control)

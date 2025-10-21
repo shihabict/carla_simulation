@@ -1,5 +1,3 @@
-import time
-
 import carla
 import random
 import numpy as np
@@ -7,6 +5,8 @@ import numpy as np
 from idm_controller import IDMController
 from follower_vehicle import FollowerVehicle
 from fs_controller import FollowerStopperController
+from research.pid_controller import LaneCenteringController
+from research.utils import generate_spawn_points_on_straight_road
 from speed_profiler import SpeedProfileController
 from utils import create_world_from_custom_map
 from settings import ROOT_DIR
@@ -21,6 +21,7 @@ class CarlaSimulator:
         self.world = self.load_custom_map(self.client, custom_map_path)
         # self.world = self.client.get_world()
         self.map = self.world.get_map()
+
         self.bp_lib = self.world.get_blueprint_library()
         self.controller_type = controller_name
         self.switch_time = switch_time
@@ -41,7 +42,17 @@ class CarlaSimulator:
 
     def load_custom_map(self,client, custom_map_path):
         xodr_content = load_xodr(custom_map_path)
-        world = create_world_from_custom_map(client, xodr_content)
+        parameters = carla.OpendriveGenerationParameters(
+            vertex_distance=2.0,
+            max_road_length=50.0,
+            wall_height=1.0,
+            additional_width=0.6,
+            smooth_junctions=True,
+            enable_mesh_visibility=True
+        )
+        world = client.generate_opendrive_world(xodr_content, parameters)
+
+        # world = create_world_from_custom_map(client, xodr_content)
         return world
 
     def setup_simulation(self):
@@ -51,14 +62,38 @@ class CarlaSimulator:
         self.world.apply_settings(settings)
 
     def spawn_vehicle(self, blueprint_name, spawn_transform):
-        bp = self.bp_lib.find(blueprint_name)
-        vehicle = self.world.try_spawn_actor(bp, spawn_transform)
-        # Add this after spawning each vehicle:
-        # physics_control = vehicle.get_physics_control()
-        # physics_control.use_sweep_wheel_collision = True
-        # physics_control.
-        # vehicle.apply_physics_control(physics_control)
-        return vehicle
+        try:
+            bp = self.bp_lib.find(blueprint_name)
+
+            # Check if spawn location is valid
+            waypoint = self.world.get_map().get_waypoint(
+                spawn_transform.location,
+                project_to_road=True,
+                lane_type=carla.LaneType.Driving
+            )
+
+            if not waypoint:
+                print(f"✗ Invalid spawn location: {spawn_transform.location}")
+                return None
+
+            # Try to spawn
+            vehicle = self.world.try_spawn_actor(bp, spawn_transform)
+
+            if vehicle is None:
+                print(f"✗ Spawn failed - location might be blocked: {spawn_transform.location}")
+
+                # Try slightly adjusted position
+                spawn_transform.location.z += 1.0
+                vehicle = self.world.try_spawn_actor(bp, spawn_transform)
+
+                if vehicle:
+                    print(f"✓ Spawn succeeded with adjusted z-height")
+
+            return vehicle
+
+        except Exception as e:
+            print(f"✗ Exception during spawn: {e}")
+            return None
 
 
 
@@ -70,12 +105,15 @@ class CarlaSimulator:
         return vehicle_length
 
     def spawn_leader_and_followers(self):
-        spawn_points = self.map.get_spawn_points()
-        base_spawn = random.choice(spawn_points)
+
+        spawn_points = generate_spawn_points_on_straight_road(self.world, num_points=50, road_length=10000)
+        # spawn_points = self.map.get_spawn_points()
+        # base_spawn = random.choice(spawn_points)
+        base_spawn = spawn_points[0]
 
         # Spawn Leader
         leader_bp = 'vehicle.lincoln.mkz_2020'
-        base_spawn.location.x -= 500
+        base_spawn.location.x += 500
         # base_spawn.location.y = 0.00
         # base_spawn.rotation.yaw = 10.00
         self.leader = self.spawn_vehicle(leader_bp, base_spawn)
@@ -92,11 +130,16 @@ class CarlaSimulator:
         fs_controller = FollowerStopperController()
 
         previous_vehicle = self.leader
+
+
+
+
         for i in range(self.num_ice_followers + 1):  # First AV + n ICE
+
             offset_distance = (i + 1) * 8
-            base_spawn.location.y = 0.00
+            # base_spawn.location.y = 0.00
             # base_spawn.rotation.yaw = 10.00
-            offset_location = base_spawn.location + carla.Location(x=offset_distance)
+            offset_location = base_spawn.location - carla.Location(x=offset_distance)
             follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
             follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.tesla.model3'
@@ -253,7 +296,7 @@ class CarlaSimulator:
         settings.fixed_delta_seconds = None
         self.world.apply_settings(settings)
         # Logging and Plots
-        self.logger.save()
+        # self.logger.save()
         # self.logger.plot_trajectories()
         # self.logger.plot_speeds()
         # self.logger.plot_reference_velocity()
@@ -268,11 +311,11 @@ if __name__ == '__main__':
     # controller_name = "FS_IDM_nomi"
     controller_type = controller_name
     reference_speed = 25
-    switch_time = 20
+    switch_time = 100
     simulation_start_time = 0.0
     simulation_end_time = 500.0
     # controller_type = "FS_IDM_avg_ref"
-    # custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
-    custom_map_path = f'{ROOT_DIR}/routes/longRoad.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
+    custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
+    # custom_map_path = f'{ROOT_DIR}/routes/single_lane.xodr'
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=1, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
     sim.run_synchronously(simulation_start_time=simulation_start_time, simulation_end_time=simulation_end_time)

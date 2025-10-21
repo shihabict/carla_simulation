@@ -185,3 +185,30 @@ def draw_route_plan(map, world, spawn_points):
         world.debug.draw_string(waypoint[0].transform.location, '-', draw_shadow=False,
                                 color=carla.Color(r=0, g=0, b=255), life_time=120.0,
                                 persistent_lines=True)
+
+
+def generate_spawn_points_on_straight_road(world, num_points=50, road_length=10000):
+    """
+    Generate evenly distributed spawn points along the straight road
+    """
+    carla_map = world.get_map()
+    spawn_points = []
+
+    # Generate points every 200 meters along the 10km road
+    spacing = road_length / num_points
+
+    for i in range(num_points):
+        distance = i * spacing + 10  # Start 10m from beginning
+
+        # Get waypoint at this distance
+        # For straight road starting at origin, x = distance
+        location = carla.Location(x=distance, y=0.0, z=0.5)
+        waypoint = carla_map.get_waypoint(location, project_to_road=True, lane_type=carla.LaneType.Driving)
+
+        if waypoint:
+            # Create spawn point with correct orientation
+            spawn_transform = waypoint.transform
+            spawn_transform.location.z += 0.5  # Lift slightly to avoid ground collision
+            spawn_points.append(spawn_transform)
+
+    return spawn_points
