@@ -317,5 +317,5 @@ if __name__ == '__main__':
     # controller_type = "FS_IDM_avg_ref"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     # custom_map_path = f'{ROOT_DIR}/routes/single_lane.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=1, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=4, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
     sim.run_synchronously(simulation_start_time=simulation_start_time, simulation_end_time=simulation_end_time)

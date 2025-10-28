@@ -5,10 +5,9 @@ import numpy as np
 
 import scipy
 
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import rcParams  # Correct import
-
 # Enable LaTeX rendering
 # Plot styling
 axes_size = 26
@@ -32,7 +31,7 @@ class SimulationLogger:
         if self.controller_type == "IDM":
             self.data_path = f"{BASE_DIR}/Reports/sim_data_with_distance_IDM.csv"
         else:
-            self.data_path = f"{BASE_DIR}/Final_Reports/sim_data_FsIdmTesting_nV_8_ref25_f50.csv"
+            self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_IDM_avg_ref_speed_nV_6_ref25_f0.02.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
@@ -557,12 +556,13 @@ class SimulationLogger:
         )
 
 if __name__ == '__main__':
-    controller_type = "FsIdmTesting"
+    controller_type = "IV_testing"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
-    sim_logger.plot_speeds(start_time=0, end_time=2600)
+    # sim_logger.plot_speeds(start_time=0, end_time=2600)
     sim_logger.plot_gap_vs_time()
     # sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
-    sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
-    sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
+    # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
+    print(0)
+    # sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
     # sim_logger.plot_spatiotemporal_diagram(start_time=0,end_time=500)

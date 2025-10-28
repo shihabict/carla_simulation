@@ -200,7 +200,7 @@ class CarlaSimulator:
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
                                         gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
                     else:
-                        command_velocity, rel_speed = follower.update_idm(delta_t)
+                        command_velocity, rel_speed = follower.update_idm()
                         ref_velocity = 0
                         gap, leader_speed = follower.compute_gap_and_leader_speed()
                         self.logger.log(sim_time=sim_time, name=f'car{j+1}',
@@ -244,13 +244,13 @@ class CarlaSimulator:
         settings.fixed_delta_seconds = None
         self.world.apply_settings(settings)
         # Logging and Plots
-        self.logger.save()
-        self.logger.plot_trajectories()
-        self.logger.plot_speeds()
-        self.logger.plot_reference_velocity()
-        # self.logger.plot_command_velocity()
-        self.logger.plot_relative_velocity()
-        self.logger.plot_gap_vs_time()
+        # self.logger.save()
+        # self.logger.plot_trajectories()
+        # self.logger.plot_speeds()
+        # self.logger.plot_reference_velocity()
+        # # self.logger.plot_command_velocity()
+        # self.logger.plot_relative_velocity()
+        # self.logger.plot_gap_vs_time()
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
@@ -263,5 +263,5 @@ if __name__ == '__main__':
     simulation_end_time = 300.0
     # controller_type = "FS_IDM_avg_ref"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=3, reference_speed=reference_speed, sampling_frequency=0.02, switch_time=switch_time)
     sim.run_asynchronously(simulation_start_time=simulation_start_time,simulation_end_time=simulation_end_time)

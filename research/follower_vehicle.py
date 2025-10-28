@@ -214,7 +214,7 @@ class FollowerVehicle:
         print(f"Lane width: {lane_width}m, Target Y: {target_y}m")
 
         current_y = self.vehicle.get_location().y
-        target_y = 1.75
+        target_y = -1.75
         y_error = target_y - current_y
 
         # Dead zone
