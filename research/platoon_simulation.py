@@ -276,7 +276,7 @@ class CarlaSimulator:
                     last_follower = self.followers[-1].vehicle
                 else:
                     last_follower = self.leader
-                cam_transform = last_follower.get_transform().transform(carla.Location(x=-10, z=5))
+                cam_transform = last_follower.get_transform().transform(carla.Location(x=-15, z=10))
                 self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
 
                 # Sync CARLA to time step
@@ -322,7 +322,7 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FsIdmbackup"
+    controller_name = "FsIdmbackupIDM_Min5"
     # controller_name = "FS_IDM_nomi"
     controller_type = controller_name
     reference_speed = 25

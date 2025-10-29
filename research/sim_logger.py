@@ -31,7 +31,7 @@ class SimulationLogger:
         if self.controller_type == "IDM":
             self.data_path = f"{BASE_DIR}/Reports/sim_data_with_distance_IDM.csv"
         else:
-            self.data_path = f"{BASE_DIR}/Reports/sim_data_FsIdmbackup_nV_8_ref25_f50.csv"
+            self.data_path = f"{BASE_DIR}/backup/sim_data_FsIdmbackupIDM_Min45_nV_8_ref25_f50.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
@@ -143,6 +143,7 @@ class SimulationLogger:
         plt.ylabel(r"\textbf{Speed (m/s)}",fontsize=18)
         # plt.title(r"\textbf{Speed Over Time}")
         plt.legend(loc='lower right',ncol=2,fontsize=18)
+        plt.xlim(0,300)
         plt.grid(True)
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
@@ -372,6 +373,7 @@ class SimulationLogger:
         plt.ylabel(r"\textbf{Relative Speed (m/s)}",fontsize=18)
         plt.title(title)
         plt.grid(True)
+        plt.xlim(0,300)
         plt.legend(loc='lower right',ncol=2,fontsize=20)
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
@@ -556,13 +558,13 @@ class SimulationLogger:
         )
 
 if __name__ == '__main__':
-    controller_type = "IV_FsIdmbackup"
+    controller_type = "IV_FsIdmbackupIDM_Min45"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
     sim_logger.plot_speeds(start_time=0, end_time=2600)
     sim_logger.plot_gap_vs_time()
     sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
-    sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
+    # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
     # print(0)
-    sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
+    # sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
     # sim_logger.plot_spatiotemporal_diagram(start_time=0,end_time=500)
