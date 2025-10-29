@@ -1,3 +1,5 @@
+import time
+
 import carla
 import random
 import numpy as np
@@ -6,7 +8,7 @@ from idm_controller import IDMController
 from follower_vehicle import FollowerVehicle
 from fs_controller import FollowerStopperController
 from research.pid_controller import LaneCenteringController
-from research.utils import generate_spawn_points_on_straight_road
+from research.utils import generate_spawn_points_on_straight_road, compute_steer_towards
 from speed_profiler import SpeedProfileController
 from utils import create_world_from_custom_map
 from settings import ROOT_DIR
@@ -134,31 +136,32 @@ class CarlaSimulator:
 
 
 
-        for i in range(self.num_ice_followers + 1):  # First AV + n ICE
+        if self.num_ice_followers!=0:
+            for i in range(self.num_ice_followers + 1):  # First AV + n ICE
 
-            offset_distance = (i + 1) * 8
-            # base_spawn.location.y = 0.00
-            # base_spawn.rotation.yaw = 10.00
-            offset_location = base_spawn.location - carla.Location(x=offset_distance)
-            follower_transform = carla.Transform(offset_location, base_spawn.rotation)
+                offset_distance = (i + 1) * 8
+                # base_spawn.location.y = 0.00
+                # base_spawn.rotation.yaw = 10.00
+                offset_location = base_spawn.location - carla.Location(x=offset_distance)
+                follower_transform = carla.Transform(offset_location, base_spawn.rotation)
 
-            follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.tesla.model3'
-            # follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.toyota.prius'
-            # follower_bp = 'vehicle.toyota.prius'
-            vehicle = self.spawn_vehicle(follower_bp, follower_transform)
-            if not vehicle:
-                raise RuntimeError(f"Failed to spawn follower {i}.")
+                follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.tesla.model3'
+                # follower_bp = 'vehicle.audi.tt' if i == 0 else 'vehicle.toyota.prius'
+                # follower_bp = 'vehicle.toyota.prius'
+                vehicle = self.spawn_vehicle(follower_bp, follower_transform)
+                if not vehicle:
+                    raise RuntimeError(f"Failed to spawn follower {i}.")
 
-            follower_length = self.get_vehicle_length(vehicle)
-            print(f"[Follower {i} Spawned and length is {follower_length}]")
+                follower_length = self.get_vehicle_length(vehicle)
+                print(f"[Follower {i} Spawned and length is {follower_length}]")
 
-            # Attach both controllers
+                # Attach both controllers
 
-            follower = FollowerVehicle(vehicle, self.map, previous_vehicle, self.reference_speed, idm_controller, fs_controller,)
+                follower = FollowerVehicle(vehicle, self.map, previous_vehicle, self.reference_speed, idm_controller, fs_controller,)
 
-            self.followers.append(follower)
-            previous_vehicle = vehicle
-            vehicle.set_transform(follower_transform)
+                self.followers.append(follower)
+                previous_vehicle = vehicle
+                vehicle.set_transform(follower_transform)
 
 
 
@@ -181,6 +184,7 @@ class CarlaSimulator:
         print(f"Max Steps : {max_steps}")
         try:
             for i in range(min_steps, max_steps):
+
                 # Step-specific timing and speed
                 sim_time = speed_df.loc[i, 'time_rel']
                 target_speed = speed_df.loc[i, 'speed_mps']
@@ -192,10 +196,6 @@ class CarlaSimulator:
                     print("Leader has no more waypoints.")
                     break
 
-                # leader_transform = self.leader.get_transform()
-                # leader_transform.location.y = 0.0
-                # leader_transform.rotation.yaw = 0.0  # Add this line to control yaw
-                # self.leader.set_transform(leader_transform)
 
                 # --- Compute throttle ---
                 current_speed = self.leader.get_velocity()
@@ -211,12 +211,23 @@ class CarlaSimulator:
                     throttle = 0.0
 
                 # --- Apply control ---
-                control = carla.VehicleControl()
-                control.throttle = throttle
-                control.brake = brake
-                control.steer = 0.0
-                if control.steer>0.0:
-                    print(f"Leader Steering : {control.steer}")
+                # control = carla.VehicleControl()
+                # control.throttle = throttle
+                # control.brake = brake
+                # control.steer = 0.0
+                # if control.steer>0.0:
+                #     print(f"Leader Steering : {control.steer}")
+                # self.leader.apply_control(control)
+
+                steer_cmd = compute_steer_towards(self.world.get_map(), self.leader,
+                                                  lookahead_dist=8.0,
+                                                  max_abs_steer=0.6)
+
+                control = carla.VehicleControl(
+                    throttle=float(throttle),
+                    brake=float(brake),
+                    steer=float(steer_cmd)
+                )
                 self.leader.apply_control(control)
 
                 self.logger.log(sim_time, 'leader', self.leader.get_location(), target_speed, round(self.leader.get_acceleration().x,3))
@@ -256,12 +267,16 @@ class CarlaSimulator:
                                         velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
                                         gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
                         print(f"IDM - {command_velocity} - position - {vehicle_location.x} - Time {sim_time} - Label - car{j+1}")
+                    # self.world.tick()
                     leader_y_position = follower.vehicle.get_location().y
 
 
                 # # --- Spectator follows last follower ---
-                last_follower = self.followers[-1].vehicle
-                cam_transform = last_follower.get_transform().transform(carla.Location(x=-10, z=15))
+                if self.num_ice_followers!=0:
+                    last_follower = self.followers[-1].vehicle
+                else:
+                    last_follower = self.leader
+                cam_transform = last_follower.get_transform().transform(carla.Location(x=-10, z=5))
                 self.spectator.set_transform(carla.Transform(cam_transform, last_follower.get_transform().rotation))
 
                 # Sync CARLA to time step
@@ -296,7 +311,7 @@ class CarlaSimulator:
         settings.fixed_delta_seconds = None
         self.world.apply_settings(settings)
         # Logging and Plots
-        # self.logger.save()
+        self.logger.save()
         # self.logger.plot_trajectories()
         # self.logger.plot_speeds()
         # self.logger.plot_reference_velocity()
@@ -307,15 +322,15 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FsIdmTesting6"
+    controller_name = "FsIdmbackup"
     # controller_name = "FS_IDM_nomi"
     controller_type = controller_name
     reference_speed = 25
-    switch_time = 100
+    switch_time = 120
     simulation_start_time = 0.0
     simulation_end_time = 500.0
     # controller_type = "FS_IDM_avg_ref"
     custom_map_path = f'{ROOT_DIR}/routes/road_with_object.xodr'
     # custom_map_path = f'{ROOT_DIR}/routes/single_lane.xodr'
-    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=4, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
+    sim = CarlaSimulator(csv_path=f'{ROOT_DIR}/datasets/CAN_Messages_decoded_speed.csv',custom_map_path=custom_map_path,controller_name=controller_name, num_ice_followers=6, reference_speed=reference_speed, sampling_frequency=50, switch_time=switch_time)
     sim.run_synchronously(simulation_start_time=simulation_start_time, simulation_end_time=simulation_end_time)

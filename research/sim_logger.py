@@ -31,7 +31,7 @@ class SimulationLogger:
         if self.controller_type == "IDM":
             self.data_path = f"{BASE_DIR}/Reports/sim_data_with_distance_IDM.csv"
         else:
-            self.data_path = f"{BASE_DIR}/Reports/sim_data_FS_IDM_avg_ref_speed_nV_6_ref25_f0.02.csv"
+            self.data_path = f"{BASE_DIR}/Reports/sim_data_FsIdmbackup_nV_8_ref25_f50.csv"
         self.reference_speed = reference_speed
         self.sampling_frequency = sampling_frequency
         self.switch_time = switch_time
@@ -68,7 +68,7 @@ class SimulationLogger:
         filename = f'sim_data_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.csv'
         df = pd.DataFrame(self.records)
         os.makedirs('Reports', exist_ok=True)
-        path = os.path.join('Reports', filename)
+        path = os.path.join('backup', filename)
         print(df.shape)
         df.to_csv(path)
         print(f"[Logged] Simulation data saved to {path}")
@@ -93,8 +93,8 @@ class SimulationLogger:
             plt.title(f'Vehicle Trajectories with reference speed {self.reference_speed}',fontsize=20)
         plt.grid()
         plt.legend()
-        plt.savefig(f'Final_Reports/trajectories_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf')
-        print(f"[Plotted] Trajectories saved to Final_Reports/trajectories_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+        plt.savefig(f'backup/trajectories_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf')
+        print(f"[Plotted] Trajectories saved to backup/trajectories_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_speeds(self,start_time=None,end_time=None):
         if self.records:
@@ -147,8 +147,8 @@ class SimulationLogger:
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
         plt.show()
-        plt.savefig(f'Final_Reports/SpeedVsTime__{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format="pdf", bbox_inches='tight')
-        print(f"[Plotted] Speed profile saved to Final_Reports/speed_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+        plt.savefig(f'backup/SpeedVsTime__{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format="pdf", bbox_inches='tight')
+        print(f"[Plotted] Speed profile saved to backup/speed_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_reference_velocity(self,start_time=None,end_time=None):
         if self.records:
@@ -177,9 +177,9 @@ class SimulationLogger:
         plt.legend(ncol=2)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
-        plt.savefig(f'Final_Reports/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300)
+        plt.savefig(f'backup/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300)
         print(
-            f"[Plotted] Reference Velocity saved to Final_Reports/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+            f"[Plotted] Reference Velocity saved to backup/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_relative_velocity(self,start_time=None, end_time=None):
         if self.records:
@@ -208,9 +208,9 @@ class SimulationLogger:
         plt.legend(ncol=2)
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
-        plt.savefig(f'Final_Reports/RelVelVsTime_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
+        plt.savefig(f'backup/RelVelVsTime_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
         print(
-            f"[Plotted] Relative Velocity saved to Final_Reports/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+            f"[Plotted] Relative Velocity saved to backup/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
 
 
@@ -239,9 +239,9 @@ class SimulationLogger:
         plt.legend(ncol=True)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
-        plt.savefig(f'Final_Reports/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300)
+        plt.savefig(f'backup/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300)
         print(
-            f"[Plotted] Command Velocity saved to Final_Reports/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+            f"[Plotted] Command Velocity saved to backup/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_gap_vs_time(self):
         if self.records:
@@ -291,7 +291,7 @@ class SimulationLogger:
         plt.legend(loc='upper right',ncol=2,fontsize=18)
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
-        plt.savefig(f'Final_Reports/SpaceHeadway{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf',bbox_inches='tight')
+        plt.savefig(f'backup/SpaceHeadway{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf',bbox_inches='tight')
 
     def plot_acceleration(self,start_time=None, end_time=None):
         if self.records:
@@ -320,8 +320,8 @@ class SimulationLogger:
         plt.legend(ncol=2)
         plt.xticks(fontsize=24)
         plt.yticks(fontsize=24)
-        plt.savefig(f'Final_Reports/acc_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
-        print(f"[Plotted] Acceleration profile saved to Final_Reports/acc_vs_timeE_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+        plt.savefig(f'backup/acc_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
+        print(f"[Plotted] Acceleration profile saved to backup/acc_vs_timeE_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_relative_speeds(self, x_col, y_col, title, switch_time=120, start_time=None, end_time=None):
 
@@ -377,7 +377,7 @@ class SimulationLogger:
         plt.yticks(fontsize=24)
         plt.tight_layout()
         plt.show()
-        plt.savefig(f'Final_Reports/RelVelVsTime_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
+        plt.savefig(f'backup/RelVelVsTime_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
 
 
     def plot_time_space_diagram(self, start_time=None, end_time=None):
@@ -419,7 +419,7 @@ class SimulationLogger:
         plt.yticks(fontsize=24)
         plt.show()
         plt.savefig(
-            f'Final_Reports/time_space_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf', bbox_inches='tight')
+            f'backup/time_space_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf', bbox_inches='tight')
 
     def plot_spatiotemporal_heatmap(self, new_cmap):
         if self.records:
@@ -488,7 +488,7 @@ class SimulationLogger:
         plt.ylabel(r'\textbf{Longitudinal Position (m)}', fontsize=18)
         plt.title(r"\textbf{Time–Space Heatmap of Vehicle Speeds}", fontsize=20)
         plt.savefig(
-            f'Final_Reports/timeSpaceHeatmap_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
+            f'backup/timeSpaceHeatmap_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
             dpi=300,format="pdf",bbox_inches='tight')
 
         # if save_pdf:
@@ -551,18 +551,18 @@ class SimulationLogger:
 
         # Save figure
         plt.savefig(
-            f'Final_Reports/spatiotemporal_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
+            f'backup/spatiotemporal_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
             dpi=300, format='pdf', bbox_inches='tight'
         )
 
 if __name__ == '__main__':
-    controller_type = "IV_testing"
+    controller_type = "IV_FsIdmbackup"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
-    # sim_logger.plot_speeds(start_time=0, end_time=2600)
+    sim_logger.plot_speeds(start_time=0, end_time=2600)
     sim_logger.plot_gap_vs_time()
-    # sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
-    # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
-    print(0)
-    # sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
+    sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed ($\Delta v$) Between Successive Vehicles Over Time}', start_time=0, end_time=2600)
+    sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
+    # print(0)
+    sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
     # sim_logger.plot_spatiotemporal_diagram(start_time=0,end_time=500)

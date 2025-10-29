@@ -4,6 +4,7 @@ import numpy as np
 from collections import deque
 from nominal_contoller import NominalController
 from research.pid_controller import LaneCenteringController
+from research.utils import compute_steer_towards
 
 
 class FollowerVehicle:
@@ -42,10 +43,75 @@ class FollowerVehicle:
 
         lead_velocity = self.leader.get_velocity()
         lead_speed = np.linalg.norm([lead_velocity.x,lead_velocity.y])
-        if gap>self.vehicle_length:
-            gap = gap - self.vehicle_length
+        # if gap>self.vehicle_length:
+        gap = gap - self.vehicle_length
 
         return gap, lead_speed
+
+    def get_lookahead_waypoint(self, world_map, vehicle, lookahead_dist=8.0):
+        """
+        world_map: carla.Map
+        vehicle: carla.Actor (Vehicle)
+        lookahead_dist: meters ahead we want to aim for
+        returns: (target_waypoint, current_waypoint)
+        """
+        transform = vehicle.get_transform()
+        loc = transform.location
+
+        # snap to nearest driving lane center
+        current_wp = world_map.get_waypoint(
+            loc,
+            project_to_road=True,
+            lane_type=carla.LaneType.Driving
+        )
+
+        dist = 0.0
+        wp_ahead = current_wp
+        step = 1.0  # meters to march each call
+        while dist < lookahead_dist:
+            nxt = wp_ahead.next(step)
+            if not nxt:
+                break
+            wp_ahead = nxt[0]
+            dist += step
+
+        return wp_ahead, current_wp
+
+    import math
+
+    def compute_steer_towards(self, world_map, vehicle, lookahead_dist=8.0, max_abs_steer=0.6):
+        """
+        Returns a steering command in [-1, 1] to aim the car toward the lane center ahead.
+        """
+        target_wp, _ = self.get_lookahead_waypoint(world_map, vehicle, lookahead_dist)
+
+        veh_tf = vehicle.get_transform()
+        veh_loc = veh_tf.location
+        veh_yaw_deg = veh_tf.rotation.yaw
+        veh_yaw = math.radians(veh_yaw_deg)
+
+        # heading unit vector of the vehicle in world frame
+        heading_vec = carla.Vector3D(math.cos(veh_yaw), math.sin(veh_yaw), 0.0)
+
+        # vector from vehicle to target point in world frame
+        to_target = carla.Vector3D(
+            target_wp.transform.location.x - veh_loc.x,
+            target_wp.transform.location.y - veh_loc.y,
+            0.0
+        )
+
+        # signed angle between heading_vec and to_target (2D)
+        dot = heading_vec.x * to_target.x + heading_vec.y * to_target.y
+        det = heading_vec.x * to_target.y - heading_vec.y * to_target.x
+        angle_err = math.atan2(det, dot)  # + = need to steer left, - = right
+
+        # map angle to steering command
+        steer_cmd = angle_err / 0.6  # scale ~proportional
+        steer_cmd = max(-max_abs_steer, min(max_abs_steer, steer_cmd))
+
+        # normalize to [-1, 1] for CARLA VehicleControl.steer
+        steer_cmd = steer_cmd / max_abs_steer
+        return float(steer_cmd)
 
     def compute_lateral_control(self, vehicle, target_y=0.0):
         current_y = vehicle.get_location().y
@@ -79,10 +145,6 @@ class FollowerVehicle:
         return steer
 
     def update_idm(self):
-
-
-
-
         ego_speed = self.get_speed()
         gap, lead_speed = self.compute_gap_and_leader_speed()
         rel_speed = lead_speed - ego_speed
@@ -109,56 +171,33 @@ class FollowerVehicle:
             brake = np.clip(-speed_error, 0.0, 1.0)
             throttle = 0.0
 
-        # # Lateral control for lane keeping
-        # current_y = self.vehicle.get_location().y
-        # target_y = 1.75 # Lane center
-        # y_error = target_y - current_y
-        #
-        # # Proportional steering control
-        # if y_error!=0:
-        #     steer = np.clip(y_error * 0.2, -0.01, 0.01)  # Gentle steering
-        # else:
+        steer_cmd = compute_steer_towards(self.map, self.vehicle,
+                                          lookahead_dist=8.0,
+                                          max_abs_steer=0.6)
+
+        control = carla.VehicleControl(
+            throttle=float(throttle),
+            brake=float(brake),
+            steer=float(steer_cmd)
+        )
+        vehicle_location = self.vehicle.get_location()
+
+        self.vehicle.apply_control(control)
+
+        # control = carla.VehicleControl()
+        # control.throttle = throttle
+        # control.brake = brake
+        # if 0<ego_speed<10:
         #     steer = 0.0
-
-        current_y = self.vehicle.get_location().y
-        target_y = -1.75
-        y_error = target_y - current_y
-
-        # Dead zone
-        if abs(y_error) < 0.05:
-            y_error = 0.0
-
-        # Derivative term (prevents oscillation)
-        y_error_rate = (y_error - self.previous_y_error)
-
-        # PD control
-        steer_raw = 0.3 * y_error - 0.5 * y_error_rate
-
-        # Smooth filter
-        steer = 0.3 * steer_raw + 0.7 * self.previous_steer
-
-        # Better limits
-        steer = np.clip(steer, -0.3, 0.3)
-
-        # Remember for next iteration
-        self.previous_y_error = y_error
-        self.previous_steer = steer
-
-
-        control = carla.VehicleControl()
-        control.throttle = throttle
-        control.brake = brake
-        if 0<ego_speed<10:
-            steer = 0.0
-            self.previous_steer = 0.0
-            self.previous_y_error = 0.0
-        control.steer = steer
+        #     self.previous_steer = 0.0
+        #     self.previous_y_error = 0.0
+        # control.steer = 0.0
         # control.steer = self.compute_lateral_control(self.leader)
         # print(f"Steering control: {control.steer}")
         if control.steer > 0.0:
             print(f"Follower Steering : {control.steer}")
-        self.vehicle.apply_control(control)
-        vehicle_location = self.vehicle.get_location()
+        # self.vehicle.apply_control(control)
+
 
         # print(
         #     f"[IDM Controller] Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Ref: {reference_speed:.2f}")
@@ -207,51 +246,22 @@ class FollowerVehicle:
         # else:
         #     steer = 0.0
 
-        current_wp = self.map.get_waypoint(self.vehicle.get_location(), project_to_road=True)
-        lane_width = current_wp.lane_width
-        target_y = -lane_width / 2  # Negative because lane id is -1
+        steer_cmd = compute_steer_towards(self.map, self.vehicle,
+                                          lookahead_dist=8.0,
+                                          max_abs_steer=0.6)
 
-        print(f"Lane width: {lane_width}m, Target Y: {target_y}m")
-
-        current_y = self.vehicle.get_location().y
-        target_y = -1.75
-        y_error = target_y - current_y
-
-        # Dead zone
-        if abs(y_error) < 0.05:
-            y_error = 0.0
-
-        # Derivative term (prevents oscillation)
-        y_error_rate = (y_error - self.previous_y_error)
-
-        # PD control
-        steer_raw = 0.3 * y_error - 0.5 * y_error_rate
-
-        # Smooth filter
-        steer = 0.3 * steer_raw + 0.7 * self.previous_steer
-
-        # Better limits
-        steer = np.clip(steer, -0.5, 0.5)
-
-        # Remember for next iteration
-        self.previous_y_error = y_error
-        self.previous_steer = steer
-
-        control = carla.VehicleControl()
-        control.throttle = throttle
-        control.brake = brake
-        # control.steer = self.compute_lateral_control(self.leader)
-
-        if 0<ego_speed<10:
-            steer = 0.0
-            self.previous_steer = 0.0
-            self.previous_y_error = 0.0
-
-        control.steer = steer
-        if control.steer > 0.0:
-            print(f"Follower Steering : {control.steer}")
-        self.vehicle.apply_control(control)
+        control = carla.VehicleControl(
+            throttle=float(throttle),
+            brake=float(brake),
+            steer=float(steer_cmd)
+        )
         vehicle_location = self.vehicle.get_location()
+
+        self.vehicle.apply_control(control)
+        # if control.steer > 0.0:
+        #     print(f"Follower Steering : {control.steer}")
+        # self.vehicle.apply_control(control)
+        # vehicle_location = self.vehicle.get_location()
 
         # print(
         #     f"[FS Controller] Ego: {ego_speed:.2f} | Lead: {lead_speed:.2f} | Gap: {gap:.2f} | Ref: {reference_speed:.2f}")

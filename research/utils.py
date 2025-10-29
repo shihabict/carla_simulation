@@ -212,3 +212,68 @@ def generate_spawn_points_on_straight_road(world, num_points=50, road_length=100
             spawn_points.append(spawn_transform)
 
     return spawn_points
+
+def get_lookahead_waypoint(world_map, vehicle, lookahead_dist=8.0):
+    """
+    world_map: carla.Map
+    vehicle: carla.Actor (Vehicle)
+    lookahead_dist: meters ahead we want to aim for
+    returns: (target_waypoint, current_waypoint)
+    """
+    transform = vehicle.get_transform()
+    loc = transform.location
+
+    # snap to nearest driving lane center
+    current_wp = world_map.get_waypoint(
+        loc,
+        project_to_road=True,
+        lane_type=carla.LaneType.Driving
+    )
+
+    dist = 0.0
+    wp_ahead = current_wp
+    step = 1.0  # meters to march each call
+    while dist < lookahead_dist:
+        nxt = wp_ahead.next(step)
+        if not nxt:
+            break
+        wp_ahead = nxt[0]
+        dist += step
+
+    return wp_ahead, current_wp
+
+import math
+
+def compute_steer_towards(world_map, vehicle, lookahead_dist=8.0, max_abs_steer=0.6):
+    """
+    Returns a steering command in [-1, 1] to aim the car toward the lane center ahead.
+    """
+    target_wp, _ = get_lookahead_waypoint(world_map, vehicle, lookahead_dist)
+
+    veh_tf = vehicle.get_transform()
+    veh_loc = veh_tf.location
+    veh_yaw_deg = veh_tf.rotation.yaw
+    veh_yaw = math.radians(veh_yaw_deg)
+
+    # heading unit vector of the vehicle in world frame
+    heading_vec = carla.Vector3D(math.cos(veh_yaw), math.sin(veh_yaw), 0.0)
+
+    # vector from vehicle to target point in world frame
+    to_target = carla.Vector3D(
+        target_wp.transform.location.x - veh_loc.x,
+        target_wp.transform.location.y - veh_loc.y,
+        0.0
+    )
+
+    # signed angle between heading_vec and to_target (2D)
+    dot = heading_vec.x * to_target.x + heading_vec.y * to_target.y
+    det = heading_vec.x * to_target.y - heading_vec.y * to_target.x
+    angle_err = math.atan2(det, dot)  # + = need to steer left, - = right
+
+    # map angle to steering command
+    steer_cmd = angle_err / 0.6  # scale ~proportional
+    steer_cmd = max(-max_abs_steer, min(max_abs_steer, steer_cmd))
+
+    # normalize to [-1, 1] for CARLA VehicleControl.steer
+    steer_cmd = steer_cmd / max_abs_steer
+    return float(steer_cmd)
