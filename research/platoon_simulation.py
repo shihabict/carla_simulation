@@ -237,26 +237,27 @@ class CarlaSimulator:
                 leader_y_position = self.leader.get_location().y
                 for j, follower in enumerate(self.followers):
 
-                    if self.switch_time == 0:
-                        latest_leader_speed = self.leader_speed_buffer[-200:]
-                        ref_velocity = np.mean(latest_leader_speed)
-                        command_velocity, gap, vehicle_location, rel_speed = follower.update_fs(ref_velocity)
-                        # gap, leader_speed = follower.compute_gap_and_leader_speed()
-                        self.logger.log(sim_time=sim_time, name=f'car{j + 1}', location=vehicle_location,
-                                        velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
-                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
-                        print(
-                            f"FS - {command_velocity} - position - {vehicle_location.x} - Time {sim_time}")
-                    elif self.switch_time and sim_time >= simulation_start_time + self.switch_time:
-                        latest_leader_speed = self.leader_speed_buffer[-200:]
-                        ref_velocity = np.mean(latest_leader_speed)
-                        command_velocity, gap, vehicle_location, rel_speed = follower.update_fs(ref_velocity)
-                        gap, leader_speed = follower.compute_gap_and_leader_speed()
-                        self.logger.log(sim_time=sim_time, name=f'car{j+1}', location=vehicle_location,
-                                        velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
-                                        gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
-                        print(
-                            f"FS - {command_velocity} - position - {follower.vehicle.get_location().x} - Time {sim_time}")
+                    if self.controller_type!="IDM":
+                        if self.switch_time == 0:
+                            latest_leader_speed = self.leader_speed_buffer[-200:]
+                            ref_velocity = np.mean(latest_leader_speed)
+                            command_velocity, gap, vehicle_location, rel_speed = follower.update_fs(ref_velocity)
+                            # gap, leader_speed = follower.compute_gap_and_leader_speed()
+                            self.logger.log(sim_time=sim_time, name=f'car{j + 1}', location=vehicle_location,
+                                            velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
+                                            gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
+                            print(
+                                f"FS - {command_velocity} - position - {vehicle_location.x} - Time {sim_time}")
+                        elif self.switch_time and sim_time >= simulation_start_time + self.switch_time:
+                            latest_leader_speed = self.leader_speed_buffer[-200:]
+                            ref_velocity = np.mean(latest_leader_speed)
+                            command_velocity, gap, vehicle_location, rel_speed = follower.update_fs(ref_velocity)
+                            gap, leader_speed = follower.compute_gap_and_leader_speed()
+                            self.logger.log(sim_time=sim_time, name=f'car{j+1}', location=vehicle_location,
+                                            velocity=command_velocity, acceleration=follower.vehicle.get_acceleration().x,
+                                            gap=gap, ref_speed=ref_velocity, rel_speed=rel_speed)
+                            print(
+                                f"FS - {command_velocity} - position - {follower.vehicle.get_location().x} - Time {sim_time}")
                     else:
                         command_velocity, gap, vehicle_location, rel_speed = follower.update_idm()
                         ref_velocity = 0
@@ -322,7 +323,7 @@ class CarlaSimulator:
         print("Vehicles destroyed. Simulation ended.")
 
 if __name__ == '__main__':
-    controller_name = "FsIdmbackupIDM_Min5"
+    controller_name = "IDM"
     # controller_name = "FS_IDM_nomi"
     controller_type = controller_name
     reference_speed = 25
