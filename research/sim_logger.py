@@ -539,9 +539,9 @@ if __name__ == '__main__':
     controller_type = "IDM"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
-    sim_logger.plot_speeds(start_time=0, end_time=2600)
+    # sim_logger.plot_speeds(start_time=0, end_time=2600)
     # sim_logger.plot_gap_vs_time()
     # sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed Between Vehicles ($\Delta v$) }', start_time=0, end_time=2600)
     # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
     # print(0)
-    # sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
+    sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
