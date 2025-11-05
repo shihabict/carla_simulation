@@ -106,9 +106,9 @@ class SimulationLogger:
         for idx, (label, group) in enumerate(df.groupby('name')):
             color = self.custom_colors[idx % len(self.custom_colors)]  # wrap around if more vehicles
             if idx == 0:
-                plt.plot(group['time'], group['speed'], label=f"L", color=color, linewidth=1)
+                plt.plot(group['time'], group['speed'], label=f"Leader", color=color, linewidth=1)
             else:
-                plt.plot(group['time'], group['speed'], label=f"V {idx}", color=color, linewidth=1)
+                plt.plot(group['time'], group['speed'], label=f"Car {idx}", color=color, linewidth=1)
 
         if self.controller_type!="IDM":
             # Add vertical dashed line at switching time
@@ -448,7 +448,7 @@ class SimulationLogger:
         cmap = new_cmap.with_extremes(bad='white')
 
         # Plot heatmap
-        plt.figure(figsize=graph_config.FIGURE_SIZE)
+        plt.figure(figsize=(12, 6))
         # plt.ylim(data['x'].min(), 2000)
         # Important fix: use bin limits for axes
         plt.xlim(xedges[0], xedges[-1])
@@ -464,7 +464,7 @@ class SimulationLogger:
         cbar.ax.tick_params(labelsize=graph_config.YTICKS)
 
         plt.xlabel(r'\textbf{Time (s)}', fontsize=graph_config.XLABEL_FONT)
-        plt.ylabel(r'\textbf{Longitudinal Position (m)}', fontsize=graph_config.YLABEL_FONT)
+        plt.ylabel(r'\textbf{Position (m)}', fontsize=graph_config.YLABEL_FONT)
         plt.title(r"\textbf{Time–Space Heatmap of Vehicle Speeds}", fontsize=graph_config.TITLE_FONT_SIZE)
         plt.savefig(
             f'backup/timeSpaceHeatmap_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
@@ -536,7 +536,8 @@ class SimulationLogger:
         )
 
 if __name__ == '__main__':
-    controller_type = "IDM"
+    controller_type = "IV_FsIdmbackupIDM_Min45"
+    # controller_type = "IDM"
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
     # sim_logger.plot_speeds(start_time=0, end_time=2600)
