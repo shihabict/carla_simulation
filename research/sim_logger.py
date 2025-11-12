@@ -101,7 +101,8 @@ class SimulationLogger:
             df_filtered = df.iloc[lower_limit:upper_limit]
             df = df_filtered
 
-        plt.figure(figsize=graph_config.FIGURE_SIZE)
+        # plt.figure(figsize=graph_config.FIGURE_SIZE)
+        plt.figure(figsize=(12,6))
 
         # for label, group in df.groupby('name'):
         #     plt.plot(group['time'], group['speed'], label=label, )
@@ -133,6 +134,7 @@ class SimulationLogger:
         # plt.title(r"\textbf{Speed Over Time}")
         plt.legend(ncol=4, fontsize=graph_config.LENGEN_FONT)
         plt.xlim(graph_config.XLIM)
+        plt.ylim((0,30))
         plt.grid(True)
         plt.xticks(fontsize=graph_config.XTICKS)
         plt.yticks(fontsize=graph_config.YTICKS)
@@ -253,7 +255,7 @@ class SimulationLogger:
 
         followers = df[df['name'].str.contains('car')]
         # plt.figure(figsize=graph_config.FIGURE_SIZE)
-        plt.figure(figsize=(12,7))
+        plt.figure(figsize=(12,6.5))
         follower_groupby = followers.groupby('name')
         for idx, (name, group) in enumerate(follower_groupby):
             color = self.custom_colors[idx % len(self.custom_colors)]
@@ -357,7 +359,7 @@ class SimulationLogger:
                  fontsize=graph_config.HDB_ANN_FONT_SIZE, ha='center', va='top', color='black')
         plt.text(switch_time + 95, plt.ylim()[1] * 1.2, "Mixed Autonomy",
                  fontsize=graph_config.MIX_ANN_FONT_SIZE, ha='center', va='top', color='black')
-        plt.text(switch_time + 6, plt.ylim()[1] * -0.7, "FS Activation", rotation=90, color='purple', fontsize=graph_config.FS_ACT_FONT_SIZE)
+        plt.text(switch_time + 6, plt.ylim()[1] * -1.4, "FS Activation", rotation=90, color='purple', fontsize=graph_config.FS_ACT_FONT_SIZE)
 
         plt.xlabel(r"\textbf{Time (s)}",fontsize=graph_config.XLABEL_FONT)
         plt.ylabel(r"\textbf{Relative Speed (m/s)}",fontsize=graph_config.YLABEL_FONT)
@@ -366,7 +368,7 @@ class SimulationLogger:
         plt.grid(True)
         plt.xlim(graph_config.XLIM)
         plt.ylim(-6,4)
-        plt.legend(loc='lower right',ncol=3, fontsize=24)
+        plt.legend(loc='lower right',ncol=2, fontsize=24)
         plt.xticks(fontsize=graph_config.XTICKS)
         plt.yticks(fontsize=graph_config.YTICKS)
         plt.tight_layout()
@@ -544,8 +546,8 @@ if __name__ == '__main__':
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
     # sim_logger.plot_speeds(start_time=0, end_time=2600)
-    sim_logger.plot_gap_vs_time()
-    # sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed Between Vehicles ($\Delta v$) }', start_time=0, end_time=2600)
+    # sim_logger.plot_gap_vs_time()
+    sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed Between Vehicles ($\Delta v$) }', start_time=0, end_time=2600)
     # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
     # print(0)
     # sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
