@@ -19,6 +19,8 @@ rcParams["axes.labelsize"] = graph_config.AXIS_SIZE
 rcParams["xtick.labelsize"] = graph_config.TICK_SIZE
 rcParams["ytick.labelsize"] = graph_config.TICK_SIZE
 rcParams["legend.fontsize"] = graph_config.TICK_SIZE
+rcParams['pdf.fonttype'] = 42  # TrueType fonts
+rcParams['ps.fonttype'] = 42   # TrueType fonts for EPS
 from settings import BASE_DIR
 
 
@@ -81,8 +83,8 @@ class SimulationLogger:
             plt.title(f'Vehicle Trajectories with reference speed {self.reference_speed}',fontsize=graph_config.TITLE_FONT_SIZE)
         plt.grid()
         plt.legend(fontsize=graph_config.LENGEN_FONT)
-        plt.savefig(f'backup/trajectories_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf')
-        print(f"[Plotted] Trajectories saved to backup/trajectories_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+        plt.savefig(f'final/trajectories_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf')
+        print(f"[Plotted] Trajectories saved to final/trajectories_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_speeds(self,start_time=None,end_time=None):
         if self.records:
@@ -122,9 +124,9 @@ class SimulationLogger:
                      fontsize=graph_config.MIX_ANN_FONT_SIZE, ha='center', va='top', color='black')
             plt.text(switch_time + 6, plt.ylim()[1] * 0.01, "FS Activation", rotation=90, color='purple', fontsize=graph_config.FS_ACT_FONT_SIZE)
         if self.controller_type!="IDM":
-            plt.title(r"\textbf{Mixed Autonomy Speeds (IDM-FS)}",fontsize=graph_config.TITLE_FONT_SIZE)
+            plt.title(r"\textbf{Mixed Autonomy Speed Profiles (IDM-FS)}",fontsize=graph_config.TITLE_FONT_SIZE)
         else:
-            plt.title(r"\textbf{Human Driving: Speed Profiles (IDM)}", fontsize=graph_config.TITLE_FONT_SIZE)
+            plt.title(r"\textbf{Human Driving Speed Profiles (IDM)}", fontsize=graph_config.TITLE_FONT_SIZE)
 
         plt.xlabel(r"\textbf{Time (s)}",fontsize=graph_config.XLABEL_FONT)
         plt.ylabel(r"\textbf{Speed (m/s)}",fontsize=graph_config.YLABEL_FONT)
@@ -135,8 +137,8 @@ class SimulationLogger:
         plt.xticks(fontsize=graph_config.XTICKS)
         plt.yticks(fontsize=graph_config.YTICKS)
         plt.show()
-        plt.savefig(f'backup/SpeedVsTime__{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format="pdf", bbox_inches='tight')
-        print(f"[Plotted] Speed profile saved to backup/speed_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+        plt.savefig(f'final/SpeedVsTime__{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format="pdf", bbox_inches='tight')
+        print(f"[Plotted] Speed profile saved to final/speed_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_reference_velocity(self,start_time=None,end_time=None):
         if self.records:
@@ -166,9 +168,9 @@ class SimulationLogger:
         plt.legend(ncol=2,fontsize=graph_config.LENGEN_FONT)
         plt.xticks(fontsize=graph_config.XTICKS)
         plt.yticks(fontsize=graph_config.YTICKS)
-        plt.savefig(f'backup/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300)
+        plt.savefig(f'final/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300)
         print(
-            f"[Plotted] Reference Velocity saved to backup/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+            f"[Plotted] Reference Velocity saved to final/ref_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_relative_velocity(self,start_time=None, end_time=None):
         if self.records:
@@ -198,9 +200,9 @@ class SimulationLogger:
         plt.legend(ncol=2,fontsize=graph_config.LENGEN_FONT)
         plt.xticks(fontsize=graph_config.XTICKS)
         plt.yticks(fontsize=graph_config.YTICKS)
-        plt.savefig(f'backup/RelVelVsTime_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
+        plt.savefig(f'final/RelVelVsTime_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
         print(
-            f"[Plotted] Relative Velocity saved to backup/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+            f"[Plotted] Relative Velocity saved to final/rel_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
 
 
@@ -230,9 +232,9 @@ class SimulationLogger:
         plt.legend(ncol=True,fontsize=graph_config.LENGEN_FONT)
         plt.xticks(fontsize=graph_config.XTICKS)
         plt.yticks(fontsize=graph_config.YTICKS)
-        plt.savefig(f'backup/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300)
+        plt.savefig(f'final/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300)
         print(
-            f"[Plotted] Command Velocity saved to backup/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+            f"[Plotted] Command Velocity saved to final/com_vel_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_gap_vs_time(self):
         if self.records:
@@ -250,7 +252,8 @@ class SimulationLogger:
         #     df = df_filtered
 
         followers = df[df['name'].str.contains('car')]
-        plt.figure(figsize=graph_config.FIGURE_SIZE)
+        # plt.figure(figsize=graph_config.FIGURE_SIZE)
+        plt.figure(figsize=(12,7))
         follower_groupby = followers.groupby('name')
         for idx, (name, group) in enumerate(follower_groupby):
             color = self.custom_colors[idx % len(self.custom_colors)]
@@ -277,12 +280,12 @@ class SimulationLogger:
         plt.ylabel(r"\textbf{Space Headway (m)}",fontsize=graph_config.YLABEL_FONT)
         plt.title(r"\textbf{Space Headway ($\Delta x$) Between Vehicles}",fontsize=graph_config.TITLE_FONT_SIZE)
         plt.xlim(graph_config.XLIM)
-        plt.ylim(graph_config.YLIM)
+        plt.ylim((0,100))
         plt.grid(True)
         plt.legend(loc='upper right',ncol=2,fontsize=graph_config.LENGEN_FONT)
         plt.xticks(fontsize=graph_config.XTICKS)
         plt.yticks(fontsize=graph_config.YTICKS)
-        plt.savefig(f'backup/SpaceHeadway{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf',bbox_inches='tight')
+        plt.savefig(f'final/SpaceHeadway{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf',bbox_inches='tight')
 
     def plot_acceleration(self,start_time=None, end_time=None):
         if self.records:
@@ -312,8 +315,8 @@ class SimulationLogger:
         plt.legend(ncol=2,fontsize=graph_config.LENGEN_FONT)
         plt.xticks(fontsize=graph_config.XTICKS)
         plt.yticks(fontsize=graph_config.YTICKS)
-        plt.savefig(f'backup/acc_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
-        print(f"[Plotted] Acceleration profile saved to backup/acc_vs_timeE_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
+        plt.savefig(f'final/acc_vs_time_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
+        print(f"[Plotted] Acceleration profile saved to final/acc_vs_timeE_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf")
 
     def plot_relative_speeds(self, x_col, y_col, title, switch_time=120, start_time=None, end_time=None):
 
@@ -350,9 +353,9 @@ class SimulationLogger:
         plt.axvline(x=switch_time, color='purple', linestyle='--', linewidth=1)
 
         # Add text annotations
-        plt.text(switch_time - 75, plt.ylim()[1] * 1.2, "Manual Driving",
+        plt.text(switch_time - 65, plt.ylim()[1] * 1.2, "Manual Driving",
                  fontsize=graph_config.HDB_ANN_FONT_SIZE, ha='center', va='top', color='black')
-        plt.text(switch_time + 85, plt.ylim()[1] * 1.2, "Mixed Autonomy",
+        plt.text(switch_time + 95, plt.ylim()[1] * 1.2, "Mixed Autonomy",
                  fontsize=graph_config.MIX_ANN_FONT_SIZE, ha='center', va='top', color='black')
         plt.text(switch_time + 6, plt.ylim()[1] * -0.7, "FS Activation", rotation=90, color='purple', fontsize=graph_config.FS_ACT_FONT_SIZE)
 
@@ -368,7 +371,7 @@ class SimulationLogger:
         plt.yticks(fontsize=graph_config.YTICKS)
         plt.tight_layout()
         plt.show()
-        plt.savefig(f'backup/RelVelVsTime_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
+        plt.savefig(f'final/RelVelVsTime_{self.controller_type}_nV_{self.num_vehicle+2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300, format='pdf', bbox_inches='tight')
 
 
     def plot_time_space_diagram(self, start_time=None, end_time=None):
@@ -411,7 +414,7 @@ class SimulationLogger:
         plt.yticks(fontsize=graph_config.YTICKS)
         plt.show()
         plt.savefig(
-            f'backup/time_space_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf', bbox_inches='tight')
+            f'final/time_space_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',dpi=300,format='pdf', bbox_inches='tight')
 
     def plot_spatiotemporal_heatmap(self, new_cmap):
         if self.records:
@@ -467,7 +470,7 @@ class SimulationLogger:
         plt.ylabel(r'\textbf{Position (m)}', fontsize=graph_config.YLABEL_FONT)
         plt.title(r"\textbf{Time–Space Heatmap of Vehicle Speeds}", fontsize=graph_config.TITLE_FONT_SIZE)
         plt.savefig(
-            f'backup/timeSpaceHeatmap_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
+            f'final/timeSpaceHeatmap_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
             dpi=300,format="pdf",bbox_inches='tight')
 
         # if save_pdf:
@@ -531,7 +534,7 @@ class SimulationLogger:
 
         # Save figure
         plt.savefig(
-            f'backup/spatiotemporal_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
+            f'final/spatiotemporal_{self.controller_type}_nV_{self.num_vehicle + 2}_ref{self.reference_speed}_f{self.sampling_frequency}.pdf',
             dpi=300, format='pdf', bbox_inches='tight'
         )
 
@@ -541,8 +544,8 @@ if __name__ == '__main__':
     num_vehicle = 6
     sim_logger = SimulationLogger(controller_type,num_vehicle,reference_speed=25, sampling_frequency=0.02, switch_time=120)
     # sim_logger.plot_speeds(start_time=0, end_time=2600)
-    # sim_logger.plot_gap_vs_time()
+    sim_logger.plot_gap_vs_time()
     # sim_logger.plot_relative_speeds('time', 'speed', r'\textbf{Relative Speed Between Vehicles ($\Delta v$) }', start_time=0, end_time=2600)
     # sim_logger.plot_time_space_diagram(start_time=0, end_time=2600)
     # print(0)
-    sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
+    # sim_logger.plot_spatiotemporal_heatmap(new_cmap=plt.cm.RdYlGn)
